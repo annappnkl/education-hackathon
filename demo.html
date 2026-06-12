@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Style Demo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { padding-bottom: 80px; }
+    .demo-section { margin-bottom: var(--space-10); }
+    .demo-label {
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-4);
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="stack stack--2" style="margin-bottom: var(--space-8);">
+    <h1>Good morning, Anna</h1>
+    <p class="text-sm text-secondary">Here's what's on your plate today.</p>
+  </div>
+
+  <!-- Search -->
+  <div class="demo-section">
+    <div class="demo-label">Search</div>
+    <div class="input-wrap">
+      <span class="icon icon--muted">search</span>
+      <input class="input" type="text" placeholder="Search files, topics, notes…" />
+    </div>
+  </div>
+
+  <!-- Badges -->
+  <div class="demo-section">
+    <div class="demo-label">Badges</div>
+    <div class="row row--gap-2" style="flex-wrap: wrap;">
+      <span class="badge badge--primary">In progress</span>
+      <span class="badge badge--neutral">Draft</span>
+      <span class="badge badge--warning">Review</span>
+      <span class="badge badge--danger">Overdue</span>
+      <span class="badge badge--info">Shared</span>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="demo-section">
+    <div class="demo-label">Buttons</div>
+    <div class="stack stack--3">
+      <div class="row row--gap-3">
+        <button class="btn btn--primary btn--lg">
+          <span class="icon icon--on-primary icon--sm">add</span>
+          New file
+        </button>
+        <button class="btn btn--secondary btn--lg">Upload</button>
+      </div>
+      <div class="row row--gap-3">
+        <button class="btn btn--primary btn--md">Save</button>
+        <button class="btn btn--ghost btn--md">Cancel</button>
+        <button class="btn btn--danger btn--md">
+          <span class="icon icon--sm">delete</span>
+          Delete
+        </button>
+      </div>
+      <div class="row row--gap-2">
+        <button class="btn btn--icon btn--ghost">
+          <span class="icon">more_horiz</span>
+        </button>
+        <button class="btn btn--icon btn--ghost">
+          <span class="icon">edit</span>
+        </button>
+        <button class="btn btn--icon btn--ghost">
+          <span class="icon">share</span>
+        </button>
+        <button class="btn btn--icon btn--secondary">
+          <span class="icon icon--primary">download</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div class="demo-section">
+    <div class="demo-label">Cards</div>
+    <div class="stack stack--4">
+
+      <div class="card">
+        <div class="row row--gap-3" style="margin-bottom: var(--space-3);">
+          <div class="avatar">
+            <span class="icon icon--primary">school</span>
+          </div>
+          <div>
+            <h4>Study Session</h4>
+            <p class="text-xs text-secondary">Biology · Chapter 7</p>
+          </div>
+          <div class="ml-auto">
+            <span class="badge badge--primary">Active</span>
+          </div>
+        </div>
+        <p class="text-sm text-secondary">Mitosis and meiosis — cell division processes and their differences.</p>
+      </div>
+
+      <div class="card card--tinted">
+        <div class="row row--gap-3">
+          <span class="icon icon--primary icon--lg">lightbulb</span>
+          <div>
+            <h4>Quick tip</h4>
+            <p class="text-sm text-secondary" style="margin-top: 2px;">You've reviewed 3 topics today. Keep it up.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card--flat">
+        <div class="row row--gap-3">
+          <span class="icon icon--muted">schedule</span>
+          <p class="text-sm text-secondary">Last opened 2 hours ago</p>
+          <div class="ml-auto">
+            <button class="btn btn--ghost btn--sm">Open</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- File rows -->
+  <div class="demo-section">
+    <div class="section-header">
+      <h3>Recent files</h3>
+      <button class="btn btn--ghost btn--sm">See all</button>
+    </div>
+    <div class="stack stack--3">
+
+      <div class="file-row file-row--pdf">
+        <div class="file-row__icon file-row__icon--pdf">
+          <!-- swap for your PDF logo image when ready -->
+          <span class="icon">picture_as_pdf</span>
+        </div>
+        <div class="file-row__body">
+          <div class="file-row__title">Cell Biology Lecture Notes.pdf</div>
+          <div class="file-row__meta">4.2 MB · Modified yesterday</div>
+        </div>
+        <div class="file-row__action">
+          <button class="btn btn--icon btn--ghost btn--sm">
+            <span class="icon icon--sm">more_vert</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="file-row file-row--word">
+        <div class="file-row__icon file-row__icon--word">
+          <!-- swap for your Word logo image when ready -->
+          <span class="icon">article</span>
+        </div>
+        <div class="file-row__body">
+          <div class="file-row__title">Essay Draft — Climate Change.docx</div>
+          <div class="file-row__meta">1.1 MB · Modified 3 days ago</div>
+        </div>
+        <div class="file-row__action">
+          <button class="btn btn--icon btn--ghost btn--sm">
+            <span class="icon icon--sm">more_vert</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="file-row file-row--excel">
+        <div class="file-row__icon file-row__icon--excel">
+          <!-- swap for your Excel logo image when ready -->
+          <span class="icon">table_chart</span>
+        </div>
+        <div class="file-row__body">
+          <div class="file-row__title">Study Schedule Q3.xlsx</div>
+          <div class="file-row__meta">820 KB · Modified today</div>
+        </div>
+        <div class="file-row__action">
+          <button class="btn btn--icon btn--ghost btn--sm">
+            <span class="icon icon--sm">more_vert</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Skeleton loader -->
+  <div class="demo-section">
+    <div class="demo-label">Skeleton / loading</div>
+    <div class="stack stack--3">
+      <div class="skeleton" style="height: 20px; width: 55%;"></div>
+      <div class="skeleton" style="height: 16px; width: 80%;"></div>
+      <div class="skeleton" style="height: 16px; width: 65%;"></div>
+    </div>
+  </div>
+
+  <!-- Icons reference -->
+  <div class="demo-section">
+    <div class="demo-label">Icons (wght 100)</div>
+    <div class="row row--gap-4" style="flex-wrap: wrap;">
+      <span class="icon" title="home">home</span>
+      <span class="icon" title="search">search</span>
+      <span class="icon" title="add">add</span>
+      <span class="icon" title="delete">delete</span>
+      <span class="icon" title="edit">edit</span>
+      <span class="icon" title="share">share</span>
+      <span class="icon" title="download">download</span>
+      <span class="icon" title="upload">upload</span>
+      <span class="icon" title="folder">folder</span>
+      <span class="icon" title="article">article</span>
+      <span class="icon" title="school">school</span>
+      <span class="icon" title="lightbulb">lightbulb</span>
+      <span class="icon" title="notifications">notifications</span>
+      <span class="icon" title="person">person</span>
+      <span class="icon" title="settings">settings</span>
+      <span class="icon icon--primary" title="check_circle">check_circle</span>
+      <span class="icon icon--danger" title="cancel">cancel</span>
+      <span class="icon icon--warning" title="warning">warning</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Nav -->
+<nav class="nav-bar">
+  <div class="nav-bar__item nav-bar__item--active">
+    <span class="icon">home</span>
+    <span class="nav-bar__label">Home</span>
+  </div>
+  <div class="nav-bar__item">
+    <span class="icon">folder</span>
+    <span class="nav-bar__label">Files</span>
+  </div>
+  <div class="nav-bar__item">
+    <span class="icon">search</span>
+    <span class="nav-bar__label">Search</span>
+  </div>
+  <div class="nav-bar__item">
+    <span class="icon">person</span>
+    <span class="nav-bar__label">Profile</span>
+  </div>
+</nav>
+
+</body>
+</html>
