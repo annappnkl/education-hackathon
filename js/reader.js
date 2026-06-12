@@ -268,11 +268,10 @@ const Reader = (() => {
     if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
 
     const selectedText = sel.toString().trim();
-    const range   = sel.getRangeAt(0);
-    const rect    = range.getBoundingClientRect();
-    const wRect   = wrapper.getBoundingClientRect();
+    const range  = sel.getRangeAt(0);
+    const rect   = range.getBoundingClientRect();
+    const wRect  = wrapper.getBoundingClientRect();
 
-    // Normalised coordinates relative to page
     const normRect = {
       x:      (rect.left - wRect.left) / wRect.width,
       y:      (rect.top  - wRect.top)  / wRect.height,
@@ -280,16 +279,109 @@ const Reader = (() => {
       height: rect.height / wRect.height,
     };
 
-    showAnnotationCard({
-      type: 'text',
-      pageNum,
-      normRect,
-      selectedText,
-      screenX: rect.right + 12,
-      screenY: rect.top,
+    sel.removeAllRanges();
+
+    // Show mini action menu — Annotate or Explain
+    showSelectionMenu({ pageNum, normRect, selectedText, rect });
+  }
+
+  // ── Selection action menu ─────────────────────
+  let _selectionMenu = null;
+
+  function showSelectionMenu({ pageNum, normRect, selectedText, rect }) {
+    closeSelectionMenu();
+
+    const menu = document.createElement('div');
+    menu.className = 'selection-menu';
+    _selectionMenu = menu;
+
+    // Position just above / to the right of the selection
+    const menuW = 168;
+    let left = rect.left + rect.width / 2 - menuW / 2;
+    let top  = rect.top - 48;
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+    if (left < 8) left = 8;
+    if (top < 8) top = rect.bottom + 8;
+    menu.style.cssText = `left:${left}px;top:${top}px`;
+
+    menu.innerHTML = `
+      <button class="selection-menu__btn" id="sm-annotate">
+        <span class="icon icon--sm">bookmark</span>Annotate
+      </button>
+      <div class="selection-menu__divider"></div>
+      <button class="selection-menu__btn selection-menu__btn--explain" id="sm-explain">
+        <span class="icon icon--sm">auto_awesome</span>Explain
+      </button>
+    `;
+
+    document.body.appendChild(menu);
+
+    menu.querySelector('#sm-annotate').addEventListener('click', e => {
+      e.stopPropagation();
+      closeSelectionMenu();
+      showAnnotationCard({
+        type: 'text', pageNum, normRect, selectedText,
+        screenX: rect.right + 12, screenY: rect.top,
+      });
     });
 
-    sel.removeAllRanges();
+    menu.querySelector('#sm-explain').addEventListener('click', e => {
+      e.stopPropagation();
+      closeSelectionMenu();
+      showExplanationBubble(selectedText, rect);
+    });
+  }
+
+  function closeSelectionMenu() {
+    if (_selectionMenu) { _selectionMenu.remove(); _selectionMenu = null; }
+  }
+
+  // ── LLM explanation bubble ───────────────────
+  async function showExplanationBubble(selectedText, rect) {
+    // Remove any existing bubble
+    document.getElementById('explanation-bubble')?.remove();
+
+    const bubble = document.createElement('div');
+    bubble.id = 'explanation-bubble';
+    bubble.className = 'explanation-bubble';
+
+    const bubbleW = 320;
+    let left = rect.right + 14;
+    let top  = rect.top;
+    if (left + bubbleW > window.innerWidth - 8) left = rect.left - bubbleW - 14;
+    if (left < 8) left = 8;
+    if (top < 8) top = 8;
+    bubble.style.cssText = `left:${left}px;top:${top}px`;
+
+    bubble.innerHTML = `
+      <div class="explanation-bubble__header">
+        <span style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--color-text-primary)">
+          <span class="icon icon--sm" style="color:var(--color-primary)">auto_awesome</span>Explanation
+        </span>
+        <button class="btn btn--icon btn--ghost btn--sm" id="exp-close">
+          <span class="icon icon--sm">close</span>
+        </button>
+      </div>
+      <div class="explanation-bubble__preview">"${escHtml(selectedText.slice(0, 100))}${selectedText.length > 100 ? '…' : ''}"</div>
+      <div id="exp-body" class="explanation-bubble__body">
+        <div style="display:flex;align-items:center;gap:8px;color:var(--color-text-tertiary);font-size:12px">
+          <div class="loading-spinner"></div>Analysing…
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(bubble);
+    document.getElementById('exp-close').addEventListener('click', () => bubble.remove());
+
+    try {
+      const paper = State.getPapers().find(p => p.id === _currentPaperId);
+      const explanation = await API.explainText(selectedText, paper?.title);
+      const body = document.getElementById('exp-body');
+      if (body) body.innerHTML = `<p style="font-size:13px;line-height:1.7;color:var(--color-text-primary);margin:0">${escHtml(explanation)}</p>`;
+    } catch {
+      const body = document.getElementById('exp-body');
+      if (body) body.innerHTML = `<p style="color:var(--color-text-tertiary);font-size:12px">Could not get explanation.</p>`;
+    }
   }
 
   // ── Area select (images) ─────────────────────
@@ -657,11 +749,12 @@ const Reader = (() => {
 
     document.getElementById('area-select-btn').addEventListener('click', toggleAreaSelect);
 
-    // Close card on outside click
+    // Close floating UI on outside click
     document.addEventListener('mousedown', e => {
-      if (_annotationCard && !_annotationCard.contains(e.target)) {
-        closeAnnotationCard();
-      }
+      if (_annotationCard && !_annotationCard.contains(e.target)) closeAnnotationCard();
+      if (_selectionMenu  && !_selectionMenu.contains(e.target))  closeSelectionMenu();
+      const expBubble = document.getElementById('explanation-bubble');
+      if (expBubble && !expBubble.contains(e.target)) expBubble.remove();
     });
 
     initTakeawayModal();
