@@ -98,14 +98,10 @@ const Reader = (() => {
     viewport.innerHTML = '';
     _pageWrappers = {};
 
-    // Load PDF — try stored, then direct URL, then CORS proxy
+    // Load PDF — try stored, then via local proxy server (handles CORS + redirects)
     let pdfData = await State.getPDF(paper.pdfStorageKey || paper.id);
     if (!pdfData && paper.openAccessUrl) {
       pdfData = await fetchPDFBuffer(paper.openAccessUrl);
-      if (!pdfData) {
-        // Try via CORS proxy
-        pdfData = await fetchPDFBuffer('https://corsproxy.io/?' + encodeURIComponent(paper.openAccessUrl));
-      }
       if (pdfData) await State.storePDF(paper.id, pdfData);
     }
 
@@ -129,11 +125,14 @@ const Reader = (() => {
     }
   }
 
-  async function fetchPDFBuffer(url) {
+  async function fetchPDFBuffer(targetUrl) {
+    // Route through local proxy server — server-side fetch has no CORS restriction
     try {
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      return await res.arrayBuffer();
+      const proxyUrl = `/proxy-pdf?url=${encodeURIComponent(targetUrl)}`;
+      const res = await fetch(proxyUrl);
+      if (res.ok) return await res.arrayBuffer();
+      // 422 = server confirmed it's not a PDF (landing page, etc.)
+      return null;
     } catch { return null; }
   }
 
