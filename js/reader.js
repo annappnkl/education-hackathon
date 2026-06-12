@@ -695,8 +695,31 @@ const Reader = (() => {
         ${ann.comment ? `<div class="annot-item__comment">${escHtml(ann.comment)}</div>` : ''}
         <div class="annot-item__page">p. ${ann.pageNumber}</div>
       `;
+
+      item.addEventListener('click', () => scrollToAnnotation(ann));
       list.appendChild(item);
     });
+  }
+
+  // ── Scroll PDF to annotation highlight ───────
+  function scrollToAnnotation(ann) {
+    const pageWrapper = _pageWrappers[ann.pageNumber];
+    if (!pageWrapper) return;
+
+    // Scroll the page into view
+    pageWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Flash the highlight element
+    const highlight = pageWrapper.querySelector(`[data-annot-id="${ann.id}"]`);
+    if (!highlight) return;
+
+    highlight.style.transition = 'box-shadow 0.15s, outline 0.15s';
+    highlight.style.outline = '3px solid rgba(0,0,0,0.55)';
+    highlight.style.boxShadow = '0 0 0 4px rgba(255,255,255,0.6)';
+    setTimeout(() => {
+      highlight.style.outline = '';
+      highlight.style.boxShadow = '';
+    }, 1400);
   }
 
   // ── Render saved annotations ──────────────────
@@ -719,6 +742,7 @@ const Reader = (() => {
       if (ann.type === 'text') {
         const el = document.createElement('div');
         el.className = 'annotation-highlight';
+        el.dataset.annotId = ann.id;
         el.style.cssText = `
           left:   ${ann.rect.x      * w}px;
           top:    ${ann.rect.y      * h}px;
@@ -731,6 +755,7 @@ const Reader = (() => {
       } else {
         const el = document.createElement('div');
         el.className = 'annotation-image-box';
+        el.dataset.annotId = ann.id;
         el.style.cssText = `
           left:         ${ann.rect.x      * w}px;
           top:          ${ann.rect.y      * h}px;

@@ -2028,8 +2028,11 @@ h5 { font-size: var(--font-size-base); }
   margin-bottom: var(--space-2);
   background: var(--color-surface-raised);
   border-left: 3px solid var(--color-primary);
-  cursor: default;
+  cursor: pointer;
+  transition: background var(--transition-fast);
 }
+
+.annot-item:hover { background: var(--color-primary-light); }
 
 .annot-item__tag {
   display: inline-flex;
