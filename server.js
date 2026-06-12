@@ -77,6 +77,27 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
+  // ── /proxy?url=https://... ── generic CORS proxy (any content type)
+  if (parsed.pathname === '/proxy') {
+    const targetUrl = parsed.query.url;
+    if (!targetUrl) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      return res.end('Missing ?url= parameter');
+    }
+    try {
+      console.log(`  → Proxying: ${targetUrl.slice(0, 80)}…`);
+      const result = await fetchRemote(targetUrl);
+      res.writeHead(result.statusCode, {
+        'Content-Type': result.contentType || 'application/octet-stream',
+      });
+      return res.end(result.body);
+    } catch (err) {
+      console.error(`  ✗ Proxy error: ${err.message}`);
+      res.writeHead(502, { 'Content-Type': 'text/plain' });
+      return res.end(`Proxy error: ${err.message}`);
+    }
+  }
+
   // ── /proxy-pdf?url=https://... ───────────────
   if (parsed.pathname === '/proxy-pdf') {
     const targetUrl = parsed.query.url;

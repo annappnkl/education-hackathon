@@ -284,13 +284,19 @@ const Graph = (() => {
     _cy.on('mouseover', 'node', e => {
       const node = e.target;
       node.addClass('hovered');
-      node.connectedEdges().addClass('highlighted').removeClass('dimmed');
 
-      // Dim everything else
-      _cy.elements().not(node).not(node.connectedEdges()).not(node.neighborhood('node')).addClass('dimmed');
-      node.neighborhood('node').addClass('hovered');
+      const connectedEdges = node.connectedEdges();
+      const connectedNodes = node.neighborhood('node');
 
-      // Tooltip
+      connectedEdges.addClass('highlighted');
+      // Dim everything not directly connected (but don't class neighbors as hovered — that makes all labels appear)
+      _cy.elements()
+        .not(node)
+        .not(connectedEdges)
+        .not(connectedNodes)
+        .addClass('dimmed');
+
+      // ── Build tooltip ──
       const d     = node.data();
       const paper = State.getPapers().find(p => p.id === d.id);
       if (!paper) return;
@@ -301,16 +307,26 @@ const Graph = (() => {
         .join('');
 
       const stars = d.rating
-        ? `<span style="color:#f5c542;letter-spacing:1px;font-size:11px">${'★'.repeat(d.rating)}${'☆'.repeat(5 - d.rating)}</span> `
+        ? `<span style="color:#f5c542;letter-spacing:1px;font-size:11px">${'★'.repeat(d.rating)}${'☆'.repeat(5 - d.rating)}</span>`
         : '';
 
-      // Count edge types for this node
-      const citedCount      = node.connectedEdges('[edgeType = "cited"]').length;
-      const contextualCount = node.connectedEdges('[edgeType = "contextual"]').length;
-      const connInfo = [
-        citedCount      ? `${citedCount} citation link${citedCount > 1 ? 's' : ''}` : '',
-        contextualCount ? `${contextualCount} contextual link${contextualCount > 1 ? 's' : ''}` : '',
-      ].filter(Boolean).join(', ');
+      // Collect contextual reasons from connected edges
+      const ctxReasons = connectedEdges
+        .filter('[edgeType = "contextual"]')
+        .map(edge => {
+          const otherId = edge.source().id() === d.id ? edge.target().id() : edge.source().id();
+          const other   = State.getPapers().find(p => p.id === otherId);
+          const reason  = edge.data('reason');
+          return other && reason ? `<div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:3px">↔ <em>${escHtml(truncate(other.title, 28))}</em>: ${escHtml(reason)}</div>` : null;
+        })
+        .filter(Boolean);
+
+      const citedCount = connectedEdges.filter('[edgeType = "cited"]').length;
+      const footerParts = [
+        `${d.annotCount} annotation${d.annotCount !== 1 ? 's' : ''}`,
+        citedCount ? `${citedCount} citation link${citedCount > 1 ? 's' : ''}` : '',
+        'click to open',
+      ].filter(Boolean);
 
       tooltip.innerHTML = `
         <div style="font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);margin-bottom:3px;line-height:1.4">${escHtml(paper.title)}</div>
@@ -318,9 +334,8 @@ const Graph = (() => {
         ${stars ? `<div style="margin-bottom:4px">${stars}</div>` : ''}
         ${d.takeaway ? `<div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:5px;font-style:italic">"${escHtml(d.takeaway.slice(0, 90))}${d.takeaway.length > 90 ? '…' : ''}"</div>` : ''}
         ${tagChips ? `<div style="margin-bottom:5px">${tagChips}</div>` : ''}
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px;border-top:1px solid rgba(255,255,255,0.08);padding-top:4px">
-          ${d.annotCount} annotation${d.annotCount !== 1 ? 's' : ''}${connInfo ? ' · ' + connInfo : ''} · click to open
-        </div>
+        ${ctxReasons.join('')}
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:5px;border-top:1px solid rgba(255,255,255,0.08);padding-top:4px">${footerParts.join(' · ')}</div>
       `;
       tooltip.style.display = 'block';
     });
@@ -331,22 +346,11 @@ const Graph = (() => {
       tooltip.style.top  = (e.originalEvent.clientY - 10) + 'px';
     });
 
-    _cy.on('mouseout', 'node', e => {
+    _cy.on('mouseout', 'node', () => {
       _cy.elements().removeClass('hovered dimmed highlighted');
       tooltip.style.display = 'none';
     });
-
-    // Show contextual edge reason on edge hover
-    _cy.on('mouseover', 'edge[edgeType = "contextual"]', e => {
-      const reason = e.target.data('reason');
-      if (!reason) return;
-      tooltip.innerHTML = `<div style="font-size:11px;color:rgba(255,255,255,0.7);font-style:italic">${escHtml(reason)}</div>`;
-      tooltip.style.display = 'block';
-    });
-
-    _cy.on('mouseout', 'edge', () => {
-      tooltip.style.display = 'none';
-    });
+    // No edge hover events — reasons are shown in node tooltip to avoid flicker
   }
 
   // ── Legend ────────────────────────────────

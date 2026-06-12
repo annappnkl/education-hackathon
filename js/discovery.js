@@ -76,7 +76,7 @@ const Discovery = (() => {
     const year    = paper.year || '—';
     const cites   = paper.citations?.toLocaleString() ?? '—';
     const hasOA   = !!paper.openAccessUrl;
-    const sourceLabel = { openalex: 'OpenAlex', crossref: 'CrossRef', core: 'CORE', europepmc: 'Europe PMC', upload: 'Uploaded' }[paper.source] || paper.source;
+    const sourceLabel = { openalex: 'OpenAlex', arxiv: 'arXiv', crossref: 'CrossRef', core: 'CORE', europepmc: 'Europe PMC', upload: 'Uploaded' }[paper.source] || paper.source;
 
     card.innerHTML = `
       <div class="paper-card__check">
