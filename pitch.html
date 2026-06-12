@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>papertrail — Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,100,0,0" rel="stylesheet">
+<style>
+:root{
+  --primary:#2A5C45; --primary-hover:#224D3A; --primary-light:#D6EAE0;
+  --bg:#EAF4EE; --surface:#FFFFFF; --raised:#F5FAF7;
+  --text:#1A2E25; --text-2:#3A5248; --text-3:#6A8C7E; --on-primary:#FFFFFF;
+  --border:#D6E8DE; --danger:#E05050; --warning:#E8A022; --info:#4A7FA5;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px; --r-pill:999px;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font);background:var(--primary);color:var(--text);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+.icon{font-family:'Material Symbols Rounded';font-weight:100;font-style:normal;
+  line-height:1;vertical-align:middle;font-variation-settings:'wght' 100;}
+
+/* Stage */
+.stage{width:100vw;height:100vh;position:relative;}
+.slide{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  padding:6vh 8vw;background:var(--bg);
+  animation:fade .4s ease;
+}
+.slide.active{display:flex;}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* Shared */
+.kicker{font-size:.85rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--primary);display:flex;align-items:center;gap:.5rem;margin-bottom:1.2rem;}
+.kicker .icon{font-size:1.2rem;}
+h1{font-size:clamp(2.2rem,6vw,4.2rem);font-weight:700;line-height:1.05;color:var(--text);letter-spacing:-.02em;}
+h2{font-size:clamp(1.8rem,4vw,3rem);font-weight:600;line-height:1.12;color:var(--text);letter-spacing:-.01em;}
+.lead{font-size:clamp(1.05rem,1.9vw,1.5rem);color:var(--text-2);line-height:1.5;font-weight:400;max-width:60ch;}
+.big-num{font-size:clamp(3rem,9vw,6rem);font-weight:700;color:var(--primary);line-height:1;letter-spacing:-.03em;}
+.muted{color:var(--text-3);font-size:.8rem;}
+
+/* Title slide */
+.title-wrap{margin:auto;text-align:center;}
+.logo{display:inline-flex;align-items:center;gap:.6rem;font-size:clamp(2.6rem,8vw,5rem);
+  font-weight:700;color:var(--primary);letter-spacing:-.03em;}
+.logo .icon{font-size:clamp(2.6rem,8vw,5rem);font-weight:100;}
+.tagline{margin-top:1rem;font-size:clamp(1.1rem,2.2vw,1.7rem);color:var(--text-2);font-weight:400;}
+.hook{margin-top:3.5rem;display:inline-flex;flex-direction:column;gap:.4rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);
+  padding:1.8rem 2.6rem;box-shadow:0 4px 24px rgba(42,92,69,.10);}
+.hook .big-num{font-size:clamp(2.6rem,7vw,4.5rem);}
+.hook-label{color:var(--text-2);font-size:clamp(.95rem,1.6vw,1.2rem);}
+
+/* Stat row */
+.stat-row{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:1.8rem;}
+.stat{flex:1;min-width:180px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:1.5rem 1.6rem;}
+.stat .n{font-size:clamp(1.8rem,4vw,2.8rem);font-weight:700;color:var(--primary);line-height:1;}
+.stat .l{margin-top:.6rem;color:var(--text-2);font-size:.95rem;line-height:1.4;}
+
+/* Pillars / cards grid */
+.grid{display:grid;gap:1.1rem;margin-top:auto;}
+.grid.c4{grid-template-columns:repeat(4,1fr);}
+.grid.c2{grid-template-columns:repeat(2,1fr);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:1.4rem;display:flex;flex-direction:column;gap:.6rem;}
+.card .chip{width:46px;height:46px;border-radius:var(--r-md);background:var(--primary-light);
+  display:flex;align-items:center;justify-content:center;color:var(--primary);}
+.card .chip .icon{font-size:1.7rem;}
+.card h3{font-size:1.05rem;font-weight:600;color:var(--text);}
+.card p{font-size:.9rem;color:var(--text-2);line-height:1.45;}
+
+/* Demo flow */
+.flow{display:flex;align-items:stretch;gap:.8rem;margin-top:auto;flex-wrap:wrap;}
+.step{flex:1;min-width:150px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:1.3rem;position:relative;}
+.step .step-n{position:absolute;top:-14px;left:1.3rem;width:30px;height:30px;border-radius:var(--r-pill);
+  background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:.9rem;font-weight:600;}
+.step .icon{font-size:2rem;color:var(--primary);}
+.step h4{margin-top:.7rem;font-size:1rem;font-weight:600;}
+.step p{margin-top:.3rem;font-size:.85rem;color:var(--text-2);line-height:1.4;}
+.wow{margin-top:1.4rem;display:inline-flex;align-items:center;gap:.6rem;background:var(--primary);
+  color:#fff;border-radius:var(--r-pill);padding:.7rem 1.4rem;font-weight:500;font-size:1.05rem;align-self:flex-start;}
+.wow .icon{font-size:1.3rem;}
+
+/* 5-step flow, 3-over-2 layout */
+.flow2{display:flex;flex-direction:column;gap:1.6rem;margin:auto 0;}
+.flow2 .row{display:flex;gap:1.6rem;justify-content:center;}
+.flow2 .step{flex:1 1 0;max-width:380px;padding:1.9rem 1.8rem 1.7rem;
+  box-shadow:0 6px 24px rgba(42,92,69,.10);transition:transform .2s ease,box-shadow .2s ease;}
+.flow2 .step:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(42,92,69,.16);}
+.flow2 .step .icon{font-size:2.5rem;}
+.flow2 .step h4{font-size:1.25rem;margin-top:1rem;}
+.flow2 .step p{font-size:1rem;margin-top:.45rem;line-height:1.5;}
+.flow2 .step .step-n{width:36px;height:36px;top:-17px;left:1.8rem;font-size:1.05rem;font-weight:600;}
+
+/* Problem list */
+.prob{display:flex;flex-direction:column;gap:1rem;margin-top:1.8rem;}
+.prob-item{display:flex;gap:1rem;align-items:flex-start;}
+.prob-item .icon{font-size:1.6rem;color:var(--primary);flex-shrink:0;margin-top:.1rem;}
+.prob-item b{font-weight:600;color:var(--text);}
+.prob-item span{color:var(--text-2);}
+
+/* Two-col */
+.cols{display:flex;gap:2.5rem;margin-top:auto;align-items:center;flex-wrap:wrap;}
+.cols>div{flex:1;min-width:280px;}
+
+/* Business model */
+.bm{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin:auto 0;}
+.bm .card{padding:1.7rem;box-shadow:0 6px 24px rgba(42,92,69,.10);}
+.bm .card .n{font-size:1.6rem;font-weight:700;color:var(--primary);}
+
+/* Ask */
+.ask-list{display:flex;flex-direction:column;gap:1rem;margin-top:2rem;}
+.ask-item{display:flex;align-items:center;gap:1rem;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:1.2rem 1.5rem;}
+.ask-item .icon{font-size:1.8rem;color:var(--primary);}
+.ask-item b{font-weight:600;}
+.ask-item span{color:var(--text-2);display:block;font-size:.9rem;}
+
+/* Product screenshots */
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2rem;margin-top:auto;align-items:start;}
+.shot{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;box-shadow:0 4px 20px rgba(42,92,69,.10);display:flex;flex-direction:column;}
+.shot img{width:100%;height:clamp(150px,22vh,240px);object-fit:cover;object-position:top;display:block;
+  border-bottom:1px solid var(--border);background:var(--raised);}
+.shot .cap{padding:.9rem 1.1rem;}
+.shot .cap b{display:block;font-size:1rem;font-weight:600;color:var(--text);}
+.shot .cap span{font-size:.85rem;color:var(--text-2);line-height:1.4;}
+.shot .tagline-mini{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--primary);margin-bottom:.3rem;display:block;}
+
+/* Feature slide — one big screenshot */
+.feature{display:grid;grid-template-columns:minmax(280px,34%) 1fr;gap:2.5rem;
+  align-items:center;flex:1;min-height:0;margin-top:1.5rem;}
+.feature .copy{display:flex;flex-direction:column;gap:.5rem;}
+.feature .step-tag{font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--primary);}
+.feature h2{font-size:clamp(1.6rem,3.2vw,2.6rem);}
+.feature .copy p{font-size:clamp(1rem,1.6vw,1.3rem);color:var(--text-2);line-height:1.5;margin-top:.4rem;}
+.feature .frame{height:100%;min-height:0;display:flex;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:1rem;box-shadow:0 6px 28px rgba(42,92,69,.12);}
+.feature .frame img{max-width:100%;max-height:62vh;object-fit:contain;border-radius:var(--r-sm);display:block;}
+.dots{display:flex;gap:.5rem;margin-top:.8rem;}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--border);display:block;}
+.dots i.on{background:var(--primary);}
+
+/* Footer / nav */
+.foot{position:absolute;bottom:2.5vh;left:8vw;right:8vw;display:flex;
+  justify-content:space-between;align-items:center;color:var(--text-3);font-size:.8rem;}
+.foot .brand{font-weight:600;color:var(--primary);}
+.progress{position:absolute;top:0;left:0;height:4px;background:var(--primary);transition:width .35s ease;}
+
+/* Controls hint */
+.hint{position:fixed;bottom:14px;right:16px;color:rgba(255,255,255,.55);font-size:.72rem;z-index:10;}
+
+/* Speaker notes */
+.notes{position:fixed;left:0;right:0;bottom:0;background:var(--text);color:#E8F2EC;
+  padding:1rem 1.4rem;font-size:.92rem;line-height:1.5;display:none;z-index:20;
+  border-top:3px solid var(--primary);max-height:35vh;overflow:auto;}
+.notes.show{display:block;}
+.notes b{color:#fff;}
+.notes .t{color:var(--warning);font-weight:600;margin-right:.5rem;}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <!-- 1 — TITLE + HOOK -->
+  <section class="slide active" data-notes="<span class='t'>0:00–0:20</span> Don't say 'hi we are team X'. Open cold with the stat. <b>'Right now, a grad student somewhere is spending nearly half their research time not researching — just wrangling sources.'</b> Then reveal the name.">
+    <div class="title-wrap">
+      <div class="logo"><span class="icon">menu_book</span>papertrail</div>
+      <div class="tagline">From scattered sources to a structured thesis.</div>
+      <div class="hook">
+        <span class="big-num">30–40%</span>
+        <span class="hook-label">of research time is spent just <b>managing sources</b> — not thinking</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 — PROBLEM -->
+  <section class="slide" data-notes="<span class='t'>0:20–1:00</span> Keep it to 40s — judges know research is hard. Land three blows: it takes months, the tools are fragmented, and the thesis itself is a blank page. <b>'Students don't lack sources. They drown in them.'</b>">
+    <div class="kicker"><span class="icon">warning</span>The problem</div>
+    <h2>Writing a thesis means<br>fighting your own tools.</h2>
+    <div class="prob">
+      <div class="prob-item"><span class="icon">hourglass_top</span><div><b>3–6 months</b> <span>of a thesis goes to the literature review alone — before a single chapter is written.</span></div></div>
+      <div class="prob-item"><span class="icon">apps</span><div><b>5+ disconnected tools</b> <span>— PDF reader, notes app, citation manager, Word, a chat AI — none of them talk to each other.</span></div></div>
+      <div class="prob-item"><span class="icon">edit_note</span><div><b>The blank page</b> <span>— even with 80 papers read, turning notes into a defensible argument is where most students stall.</span></div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="n">~35 min</div><div class="l">avg. time to read &amp; log a single paper (Zendy, 1,500+ researchers)</div></div>
+      <div class="stat"><div class="n">Why now</div><div class="l">LLMs can finally read, cite, and reason over a personal library — on mobile.</div></div>
+    </div>
+  </section>
+
+  <!-- 3 — HOW IT WORKS (5 steps) -->
+  <section class="slide" data-notes="<span class='t'>1:00–1:40</span> This is the heart of the pitch. Name already revealed. Walk the five steps, then — if doing it live — switch to the app and show steps 2 and 5 for real. <b>Core insight:</b> you start with an idea, not a finished thesis; papertrail does discovery, reading, connecting and writing in one place. Land the wow line: you don't even need to know your topic.">
+    <div class="kicker"><span class="icon">bolt</span>How papertrail works</div>
+    <h2>Your thesis, formed.</h2>
+    <p class="lead">Your research — from first PDF to a final, cited draft, in one place.</p>
+    <div class="flow2">
+      <div class="row">
+        <div class="step"><span class="step-n">1</span><span class="icon">lightbulb</span><h4>Describe your direction</h4><p>Just say what you want to research — no fixed thesis needed.</p></div>
+        <div class="step"><span class="step-n">2</span><span class="icon">travel_explore</span><h4>It finds the papers</h4><p>papertrail pulls relevant research; you pick what to keep.</p></div>
+        <div class="step"><span class="step-n">3</span><span class="icon">edit_note</span><h4>Read &amp; annotate</h4><p>Highlight and tag excerpts as you read.</p></div>
+      </div>
+      <div class="row">
+        <div class="step"><span class="step-n">4</span><span class="icon">account_tree</span><h4>See the links</h4><p>Relationships between papers surface automatically.</p></div>
+        <div class="step"><span class="step-n">5</span><span class="icon">edit_document</span><h4>Write with AI</h4><p>It drafts, analyses &amp; cites alongside you.</p></div>
+      </div>
+    </div>
+    <div class="wow" style="align-self:center"><span class="icon">bolt</span>You don't even need to know your topic — describe a direction, papertrail finds the research.</div>
+  </section>
+
+  <!-- 4a — PRODUCT: READ & TAG -->
+  <section class="slide" data-notes="<span class='t'>1:35–1:50</span> The 'it's real' beat, part 1. Point, don't read. <b>'As you read, you highlight any passage and tag it — Key Point, Methodology, Citation, Gap.'</b> Note this is a real paper from the corpus.">
+    <div class="kicker"><span class="icon">grid_view</span>The product — already working, not a mockup</div>
+    <div class="feature">
+      <div class="copy">
+        <span class="step-tag">1 · Read &amp; tag</span>
+        <h2>Annotate in place</h2>
+        <p>Highlight any passage in a PDF and tag it — Key Point, Methodology, Citation or Gap. No copy-pasting into a separate notes app.</p>
+        <div class="dots"><i class="on"></i><i></i><i></i></div>
+      </div>
+      <div class="frame"><img src="assets/annotate.png" alt="Tagging an excerpt in a PDF"></div>
+    </div>
+  </section>
+
+  <!-- 4b — PRODUCT: CONNECT -->
+  <section class="slide" data-notes="<span class='t'>1:50–2:05</span> Part 2 — the differentiator. <b>'papertrail then maps how your papers relate to each other — shared findings, overlaps, gaps.'</b> This is the part a citation manager can't do.">
+    <div class="kicker"><span class="icon">grid_view</span>The product — already working, not a mockup</div>
+    <div class="feature">
+      <div class="copy">
+        <span class="step-tag">2 · Connect</span>
+        <h2>See the links between papers</h2>
+        <p>papertrail maps how your sources relate — shared findings, overlaps and gaps — across your whole library, not one PDF at a time.</p>
+        <div class="dots"><i></i><i class="on"></i><i></i></div>
+      </div>
+      <div class="frame"><img src="assets/connect.png" alt="Timeline of connected papers"></div>
+    </div>
+  </section>
+
+  <!-- 4c — PRODUCT: SYNTHESIZE -->
+  <section class="slide" data-notes="<span class='t'>2:05–2:20</span> Part 3 — the payoff. <b>'And your tagged excerpts assemble themselves into a structured, cited draft — grouped by theme.'</b> This is the bridge into the live demo.">
+    <div class="kicker"><span class="icon">grid_view</span>The product — already working, not a mockup</div>
+    <div class="feature">
+      <div class="copy">
+        <span class="step-tag">3 · Synthesize</span>
+        <h2>Excerpts become a cited draft</h2>
+        <p>Tagged quotes group by theme into an editable thesis section — every excerpt still linked to its source and citation.</p>
+        <div class="dots"><i></i><i></i><i class="on"></i></div>
+      </div>
+      <div class="frame"><img src="assets/synthesize.png" alt="Tagged excerpts assembled into a draft"></div>
+    </div>
+  </section>
+
+  <!-- 5 — IMPACT + SCALE -->
+  <section class="slide" data-notes="<span class='t'>3:10–3:40</span> Quantify the win, then zoom out. <b>'We compress months of source-wrangling into days — and at scale that's millions of student-hours returned to actual thinking.'</b>">
+    <div class="kicker"><span class="icon">trending_up</span>Impact &amp; scale</div>
+    <h2>Months of busywork → days of real thinking.</h2>
+    <div class="stat-row" style="margin-top:1.8rem">
+      <div class="stat"><div class="n">~10×</div><div class="l">faster from "folder of PDFs" to a structured, cited first draft.</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">of claims traceable to a source — built-in defense against unsupported writing.</div></div>
+      <div class="stat"><div class="n">Mobile-first</div><div class="l">research happens in the gaps of a day — bus, lab, library — not just at a desk.</div></div>
+    </div>
+    <p class="lead" style="margin-top:1.8rem">There are <b>tens of millions</b> of thesis &amp; dissertation students worldwide. Returning even 50 hours each is a continent's worth of recovered research time.</p>
+  </section>
+
+  <!-- 6 — BUSINESS MODEL -->
+  <section class="slide" data-notes="<span class='t'>3:40–4:05 — closer</span> Fast. Three lines. Freemium gets students in; universities pay for the seats; the library is the moat. Land it: <b>'papertrail turns the worst part of a thesis into its fastest.'</b> Then stop — leave a product screenshot on screen for questions.">
+
+    <div class="kicker"><span class="icon">payments</span>Business model</div>
+    <h2>Free to start. Paid to finish.</h2>
+    <div class="bm">
+      <div class="card"><div class="chip"><span class="icon">person</span></div><div class="n">Free</div><h3>Student tier</h3><p>Limited library &amp; drafts. Hooks every student during their thesis crunch.</p></div>
+      <div class="card"><div class="chip"><span class="icon">workspace_premium</span></div><div class="n">€8/mo</div><h3>Pro</h3><p>Unlimited sources, full AI assistant, export to Word &amp; LaTeX.</p></div>
+      <div class="card"><div class="chip"><span class="icon">school</span></div><div class="n">B2B</div><h3>University &amp; library</h3><p>Site licenses, institutional citation styles, cohort analytics.</p></div>
+    </div>
+  </section>
+
+  <div class="progress" id="progress"></div>
+</div>
+
+<div class="hint">← → navigate · <b>S</b> speaker notes · <b>F</b> fullscreen</div>
+<div class="notes" id="notes"></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+let i=0;
+const progress=document.getElementById('progress');
+const notes=document.getElementById('notes');
+let notesOn=false;
+function render(){
+  slides.forEach((s,n)=>s.classList.toggle('active',n===i));
+  progress.style.width=((i+1)/slides.length*100)+'%';
+  if(notesOn){notes.innerHTML=slides[i].dataset.notes||'';}
+}
+function go(d){i=Math.max(0,Math.min(slides.length-1,i+d));render();}
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' ')go(1);
+  else if(e.key==='ArrowLeft'||e.key==='PageUp')go(-1);
+  else if(e.key==='Home'){i=0;render();}
+  else if(e.key==='End'){i=slides.length-1;render();}
+  else if(e.key.toLowerCase()==='s'){notesOn=!notesOn;notes.classList.toggle('show',notesOn);render();}
+  else if(e.key.toLowerCase()==='f'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+});
+// click / tap to advance
+document.getElementById('stage').addEventListener('click',e=>{
+  if(e.clientX < window.innerWidth*0.25) go(-1); else go(1);
+});
+render();
+</script>
+</body>
+</html>
