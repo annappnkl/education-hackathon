@@ -1817,6 +1817,8 @@ h5 { font-size: var(--font-size-base); }
   margin-bottom: 3px;
   display: flex;
   align-items: center;
+  display: flex;
+  align-items: center;
   gap: var(--space-1);
 }
 
@@ -1825,6 +1827,30 @@ h5 { font-size: var(--font-size-base); }
   color: var(--color-text-primary);
   line-height: 1.5;
   font-style: italic;
+}
+
+.ref-item__delete {
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ref-item:hover .ref-item__delete { display: flex; }
+
+.ref-item__delete:hover {
+  background: var(--color-danger-light, #fde8e8);
+  color: var(--color-danger, #e05050);
 }
 
 .ref-item__comment {

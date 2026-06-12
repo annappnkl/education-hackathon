@@ -324,17 +324,67 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
           <div class="ref-item__source">
             <span class="icon" style="font-size:11px">${isImage ? 'image' : 'format_quote'}</span>
             ${escHtml(truncate(ann.paperTitle, 36))} · ${ann.paperYear || '—'}
+            <button class="ref-item__delete" title="Delete annotation" data-id="${ann.id}">
+              <span class="icon" style="font-size:13px">close</span>
+            </button>
           </div>
           <div class="ref-item__text">${isImage ? '[Image area]' : escHtml(truncate(ann.selectedText, 160))}</div>
           ${ann.comment ? `<div class="ref-item__comment">${escHtml(ann.comment)}</div>` : ''}
         `;
-        item.addEventListener('click', () => scrollEditorToAnnotation(ann));
+
+        // Click item body → scroll to excerpt in editor
+        item.addEventListener('click', e => {
+          if (e.target.closest('.ref-item__delete')) return;
+          scrollEditorToAnnotation(ann);
+        });
         item.title = 'Click to jump to this excerpt in the editor';
+
+        // Delete button
+        item.querySelector('.ref-item__delete').addEventListener('click', e => {
+          e.stopPropagation();
+          deleteAnnotation(ann);
+        });
+
         itemsDiv.appendChild(item);
       });
 
       list.appendChild(group);
     });
+  }
+
+  // ── Delete annotation ─────────────────────────
+  function deleteAnnotation(ann) {
+    // Remove from state
+    State.removeAnnotation(ann.paperId, ann.id);
+
+    // Remove matching blockquote / image paragraph from editor
+    const doc   = document.getElementById('editor-doc');
+    const short = (ann.selectedText || '').slice(0, 40).toLowerCase();
+
+    if (ann.type === 'image') {
+      // Image blocks contain the paper title
+      const paras = doc.querySelectorAll('p');
+      paras.forEach(p => {
+        if (p.textContent.includes('[Image') && p.textContent.includes(ann.paperTitle?.slice(0, 20))) {
+          // Remove the paragraph
+          p.remove();
+        }
+      });
+    } else if (short) {
+      doc.querySelectorAll('blockquote').forEach(bq => {
+        if (bq.textContent.toLowerCase().includes(short)) {
+          // Also remove the comment paragraph immediately after, if present
+          const next = bq.nextElementSibling;
+          if (next && next.tagName === 'P' && next.style.fontStyle === 'italic' && ann.comment) {
+            next.remove();
+          }
+          bq.remove();
+        }
+      });
+    }
+
+    State.saveWritingContent(doc.innerHTML);
+    renderRefs(); // re-render left panel
   }
 
   // ── Click ref → scroll editor to matching blockquote ──
