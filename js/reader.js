@@ -147,17 +147,16 @@ const Reader = (() => {
 
   // ── Abstract / metadata view (when no PDF) ───
   function renderAbstractView(paper, container) {
-    const authors  = (paper.authors || []).join(', ') || 'Unknown authors';
-    const doiLink  = paper.doi ? `<a href="https://doi.org/${paper.doi}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px"><span class="icon icon--sm">open_in_new</span>DOI</a>` : '';
-    const oaLink   = paper.openAccessUrl ? `<a href="${escHtml(paper.openAccessUrl)}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px"><span class="icon icon--sm">open_in_new</span>Open Access page</a>` : '';
+    const authors   = (paper.authors || []).join(', ') || 'Unknown authors';
+    const doiLink   = paper.doi ? `<a href="https://doi.org/${paper.doi}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px"><span class="icon icon--sm">open_in_new</span>DOI</a>` : '';
+    const oaLink    = paper.openAccessUrl ? `<a href="${escHtml(paper.openAccessUrl)}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px"><span class="icon icon--sm">open_in_new</span>Open Access page</a>` : '';
     const uploadBtn = `<label class="btn btn--secondary btn--sm" style="cursor:pointer;font-size:11px"><span class="icon icon--primary icon--sm">upload_file</span>Upload PDF<input type="file" accept=".pdf" style="display:none" id="inline-upload" /></label>`;
 
-    // Wrapper acts like a single "page" for annotation purposes
     const pageNum = 1;
     const wrapper = document.createElement('div');
     wrapper.className = 'pdf-page-wrapper abstract-page';
     wrapper.dataset.page = pageNum;
-    wrapper.style.cssText = 'width:680px;background:#fff;padding:48px 56px;font-family:var(--font-family);box-sizing:border-box;';
+    wrapper.style.cssText = 'width:680px;background:#fff;padding:48px 56px;font-family:var(--font-family);box-sizing:border-box;position:relative;';
 
     wrapper.innerHTML = `
       <div style="margin-bottom:32px">
@@ -176,9 +175,15 @@ const Reader = (() => {
           <div id="abstract-text" style="font-size:14px;line-height:1.8;color:var(--color-text-primary)">${escHtml(paper.abstract)}</div>
         </div>
       ` : '<div style="color:var(--color-text-tertiary);font-size:13px;font-style:italic">No abstract available.</div>'}
-      <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--color-border-subtle);display:flex;gap:8px;align-items:center">
-        <span style="font-size:11px;color:var(--color-text-tertiary)">Have the full PDF?</span>
+      <div class="abstract-drop-zone" id="abstract-drop-zone">
+        <span class="icon" style="font-size:28px;color:var(--color-primary);opacity:0.6">upload_file</span>
+        <div style="font-size:13px;font-weight:500;color:var(--color-text-secondary)">Drop PDF here or</div>
         ${uploadBtn}
+        <div style="font-size:11px;color:var(--color-text-tertiary)">Drag a downloaded PDF straight onto this page</div>
+      </div>
+      <div class="abstract-drop-overlay" id="abstract-drop-overlay">
+        <span class="icon" style="font-size:40px">upload_file</span>
+        <div>Drop to load PDF</div>
       </div>
     `;
 
@@ -191,26 +196,54 @@ const Reader = (() => {
     container.appendChild(wrapper);
     _pageWrappers[pageNum] = wrapper;
 
-    // Text selection → annotation card (same as PDF flow)
     wrapper.addEventListener('mouseup', e => handleTextSelection(e, pageNum, wrapper));
-
-    // Render any saved annotations
     renderAllAnnotations(paper.id);
 
-    // Upload handler
+    // ── Shared PDF handler (file → store → open) ──
+    async function handlePDFFile(file) {
+      if (!file || file.type !== 'application/pdf') return;
+      const buf = await file.arrayBuffer();
+      await State.storePDF(paper.id, buf);
+      State.updatePaper(paper.id, { pdfStorageKey: paper.id });
+      container.innerHTML = '';
+      _pageWrappers = {};
+      openPaper(paper.id);
+    }
+
+    // Upload via file picker
     const inlineUpload = document.getElementById('inline-upload');
     if (inlineUpload) {
-      inlineUpload.addEventListener('change', async () => {
-        const f = inlineUpload.files[0];
-        if (!f) return;
-        const buf = await f.arrayBuffer();
-        await State.storePDF(paper.id, buf);
-        State.updatePaper(paper.id, { pdfStorageKey: paper.id });
-        container.innerHTML = '';
-        _pageWrappers = {};
-        openPaper(paper.id);
-      });
+      inlineUpload.addEventListener('change', () => handlePDFFile(inlineUpload.files[0]));
     }
+
+    // ── Drag-and-drop onto the whole viewport ────
+    const overlay = document.getElementById('abstract-drop-overlay');
+
+    // Also listen on the outer viewport container so the drop zone is the full page area
+    const viewport = container;
+
+    let _dragCounter = 0; // track enter/leave pairs across children
+
+    viewport.addEventListener('dragenter', e => {
+      e.preventDefault();
+      _dragCounter++;
+      if (_dragCounter === 1) overlay.classList.add('visible');
+    });
+
+    viewport.addEventListener('dragleave', () => {
+      _dragCounter--;
+      if (_dragCounter === 0) overlay.classList.remove('visible');
+    });
+
+    viewport.addEventListener('dragover', e => { e.preventDefault(); });
+
+    viewport.addEventListener('drop', e => {
+      e.preventDefault();
+      _dragCounter = 0;
+      overlay.classList.remove('visible');
+      const file = e.dataTransfer?.files?.[0];
+      handlePDFFile(file);
+    });
   }
 
   async function renderPage(pageNum, container) {

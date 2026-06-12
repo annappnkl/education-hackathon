@@ -1961,3 +1961,40 @@ h5 { font-size: var(--font-size-base); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
+
+/* ── Abstract drag-and-drop ───────────────────── */
+.abstract-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6);
+  margin-top: var(--space-8);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.abstract-drop-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 92, 69, 0.12);
+  border: 3px dashed var(--color-primary);
+  border-radius: var(--radius-md);
+  z-index: 20;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-primary);
+  pointer-events: none;
+}
+
+.abstract-drop-overlay.visible {
+  display: flex;
+}
