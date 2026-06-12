@@ -245,10 +245,32 @@ const Onboarding = (() => {
       if (current) item.classList.add('active');
 
       item.innerHTML = `
-        <div class="project-list-item__type">${proj.type}</div>
-        <div class="project-list-item__topic">${escHtml(proj.topic.slice(0, 60))}${proj.topic.length > 60 ? '…' : ''}</div>
-        <div class="project-list-item__date">${formatDate(proj.createdAt)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="project-list-item__type">${proj.type}</div>
+          <div class="project-list-item__topic">${escHtml(proj.topic.slice(0, 60))}${proj.topic.length > 60 ? '…' : ''}</div>
+          <div class="project-list-item__date">${formatDate(proj.createdAt)}</div>
+        </div>
+        <button class="project-list-item__delete" title="Delete project">
+          <span class="icon" style="font-size:14px">delete</span>
+        </button>
       `;
+      item.style.display = 'flex';
+      item.style.alignItems = 'flex-start';
+      item.style.gap = '4px';
+
+      item.querySelector('.project-list-item__delete').addEventListener('click', e => {
+        e.stopPropagation();
+        if (!confirm(`Delete "${proj.topic.slice(0, 50)}"? This cannot be undone.`)) return;
+        State.deleteProject(proj.id);
+        // If preview was showing this project, hide it
+        const preview = document.getElementById('project-preview');
+        if (preview.style.display !== 'none') {
+          preview.style.display = 'none';
+          document.querySelector('.onboarding').style.display = '';
+        }
+        renderProjectsSidebar();
+      });
+
       item.addEventListener('click', () => showProjectPreview(proj));
       list.appendChild(item);
     });

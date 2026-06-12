@@ -108,6 +108,16 @@ const State = (() => {
     return _state.allProjects || [];
   }
 
+  function deleteProject(id) {
+    if (!_state.allProjects) return;
+    _state.allProjects = _state.allProjects.filter(p => p.id !== id);
+    if (_state.project?.id === id) {
+      // Deleted the active project — switch to most recent remaining, or null
+      _state.project = _state.allProjects[_state.allProjects.length - 1] || null;
+    }
+    save();
+  }
+
   function switchProject(id) {
     if (_state.project?.id === id) return;
     const found = (_state.allProjects || []).find(p => p.id === id);
@@ -285,7 +295,7 @@ const State = (() => {
 
   return {
     get, setScreen, setWorkspaceMode,
-    createProject, getProject, getAllProjects, switchProject, renameProject,
+    createProject, getProject, getAllProjects, switchProject, renameProject, deleteProject,
     addChatMessage,
     addPapers, getPapers, updatePaper,
     getAllTags, addCustomTag, getTagById,

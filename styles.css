@@ -633,6 +633,21 @@ h5 { font-size: var(--font-size-base); }
 .project-list-item:hover { background: var(--color-bg); }
 .project-list-item.active { background: var(--color-primary-light); }
 
+.project-list-item__delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-tertiary);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.project-list-item:hover .project-list-item__delete { opacity: 1; }
+.project-list-item__delete:hover { color: var(--color-danger); }
+
 .project-list-item__type {
   font-size: 10px;
   font-weight: var(--font-weight-semibold);
