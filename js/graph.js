@@ -342,7 +342,7 @@ const Graph = (() => {
         <div style="font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);margin-bottom:3px;line-height:1.4">${escHtml(paper.title)}</div>
         <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:5px">${paper.year || ''}${paper.authors?.length ? ' · ' + paper.authors.slice(0, 2).join(', ') : ''}</div>
         ${stars ? `<div style="margin-bottom:4px">${stars}</div>` : ''}
-        ${d.takeaway ? `<div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:5px;font-style:italic">"${escHtml(d.takeaway.slice(0, 90))}${d.takeaway.length > 90 ? '…' : ''}"</div>` : ''}
+        ${d.takeaway ? `<div style="margin-bottom:5px"><span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.35);margin-right:5px">My note</span><span style="font-size:10px;color:rgba(255,255,255,0.65);font-style:italic">"${escHtml(d.takeaway.slice(0, 90))}${d.takeaway.length > 90 ? '…' : ''}"</span></div>` : ''}
         ${tagChips ? `<div style="margin-bottom:5px">${tagChips}</div>` : ''}
         ${ctxReasons.join('')}
         <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:5px;border-top:1px solid rgba(255,255,255,0.08);padding-top:4px">${footerParts.join(' · ')}</div>
