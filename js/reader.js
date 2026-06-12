@@ -697,6 +697,17 @@ const Reader = (() => {
       `;
 
       item.addEventListener('click', () => scrollToAnnotation(ann));
+
+      // Hover → glow the matching highlight in the PDF
+      item.addEventListener('mouseenter', () => {
+        document.querySelector(`[data-annot-id="${ann.id}"]`)
+          ?.classList.add('annotation-highlight--panel-hover');
+      });
+      item.addEventListener('mouseleave', () => {
+        document.querySelector(`[data-annot-id="${ann.id}"]`)
+          ?.classList.remove('annotation-highlight--panel-hover');
+      });
+
       list.appendChild(item);
     });
   }
@@ -706,20 +717,17 @@ const Reader = (() => {
     const pageWrapper = _pageWrappers[ann.pageNumber];
     if (!pageWrapper) return;
 
-    // Scroll the page into view
-    pageWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Flash the highlight element
     const highlight = pageWrapper.querySelector(`[data-annot-id="${ann.id}"]`);
+
+    // Scroll the highlight itself into view (not the whole page)
+    const target = highlight || pageWrapper;
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
     if (!highlight) return;
 
-    highlight.style.transition = 'box-shadow 0.15s, outline 0.15s';
-    highlight.style.outline = '3px solid rgba(0,0,0,0.55)';
-    highlight.style.boxShadow = '0 0 0 4px rgba(255,255,255,0.6)';
-    setTimeout(() => {
-      highlight.style.outline = '';
-      highlight.style.boxShadow = '';
-    }, 1400);
+    // Brief flash
+    highlight.classList.add('annotation-highlight--panel-hover');
+    setTimeout(() => highlight.classList.remove('annotation-highlight--panel-hover'), 1400);
   }
 
   // ── Render saved annotations ──────────────────
@@ -750,7 +758,6 @@ const Reader = (() => {
           height: ${ann.rect.height * h}px;
           background: ${color};
         `;
-        el.title = `${tag?.name || ''}: ${ann.comment || ann.selectedText}`;
         overlay.appendChild(el);
       } else {
         const el = document.createElement('div');
@@ -764,7 +771,6 @@ const Reader = (() => {
           border-color: ${color};
           color:        ${color};
         `;
-        el.title = `${tag?.name || ''}: ${ann.comment}`;
         overlay.appendChild(el);
       }
     });

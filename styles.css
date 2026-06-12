@@ -1273,10 +1273,15 @@ h5 { font-size: var(--font-size-base); }
   opacity: 0.35;
   pointer-events: auto;
   cursor: pointer;
-  transition: opacity var(--transition-fast);
+  transition: opacity 0.15s, box-shadow 0.15s;
 }
 
 .annotation-highlight:hover { opacity: 0.6; }
+
+.annotation-highlight--panel-hover {
+  opacity: 0.75 !important;
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.5), 0 0 10px 2px rgba(0,0,0,0.2);
+}
 
 .annotation-image-box {
   position: absolute;
