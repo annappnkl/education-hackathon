@@ -149,7 +149,7 @@
           </div>
 
           <!-- PDF panel -->
-          <div class="reader__panel">
+          <div class="reader__panel" style="flex:1;min-width:0">
             <!-- Empty state -->
             <div class="reader__panel-empty" id="reader-empty">
               <span class="icon icon--muted">picture_as_pdf</span>
@@ -180,6 +180,19 @@
                 <span class="icon">sticky_note_2</span>
                 Paper notes
               </button>
+            </div>
+          </div>
+          <!-- Annotations panel -->
+          <div class="reader__annots" id="reader-annots-panel">
+            <div class="reader__annots-header">
+              <span class="reader__annots-title">Annotations</span>
+              <span class="reader__annots-count" id="reader-annots-count"></span>
+            </div>
+            <div class="reader__annots-list" id="reader-annots-list">
+              <div class="reader__annots-empty">
+                <span class="icon">bookmark_border</span>
+                <p>Open a paper to see annotations</p>
+              </div>
             </div>
           </div>
         </div>

@@ -117,6 +117,7 @@ const Reader = (() => {
     if (!pdfData) {
       // Render abstract view — always readable and annotatable
       renderAbstractView(paper, viewport);
+      renderAnnotationsPanel(paperId);
       return;
     }
 
@@ -128,6 +129,7 @@ const Reader = (() => {
       }
       // Overlay saved annotations
       renderAllAnnotations(paper.id);
+      renderAnnotationsPanel(paper.id);
     } catch(err) {
       viewport.innerHTML = `<div class="empty-state"><span class="icon">error</span><p>Could not render PDF.</p></div>`;
       console.error('PDF render error', err);
@@ -615,6 +617,7 @@ const Reader = (() => {
       closeAnnotationCard();
       if (keepRect) keepRect.remove();
       renderAllAnnotations(_currentPaperId);
+      renderAnnotationsPanel(_currentPaperId);
       renderSidebar(); // refresh annotation count
     });
 
@@ -648,6 +651,52 @@ const Reader = (() => {
 
   function closeAnnotationCard() {
     if (_annotationCard) { _annotationCard.remove(); _annotationCard = null; }
+  }
+
+  // ── Annotations panel (right side) ───────────
+  function renderAnnotationsPanel(paperId) {
+    const list      = document.getElementById('reader-annots-list');
+    const countEl   = document.getElementById('reader-annots-count');
+    if (!list) return;
+
+    if (!paperId) {
+      list.innerHTML = `<div class="reader__annots-empty"><span class="icon">bookmark_border</span><p>Open a paper to see annotations</p></div>`;
+      if (countEl) countEl.textContent = '';
+      return;
+    }
+
+    const annotations = State.getAnnotations(paperId);
+    if (countEl) countEl.textContent = annotations.length || '';
+
+    if (!annotations.length) {
+      list.innerHTML = `<div class="reader__annots-empty"><span class="icon">bookmark_border</span><p>No annotations yet — select text and tap Annotate</p></div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    annotations.forEach(ann => {
+      const tag   = State.getTagById(ann.tagId);
+      const color = tag?.color || '#2A5C45';
+
+      const item = document.createElement('div');
+      item.className = 'annot-item';
+      item.style.borderLeftColor = color;
+
+      const textPreview = ann.type === 'image'
+        ? '[Image area]'
+        : escHtml(ann.selectedText?.slice(0, 200) || '');
+
+      item.innerHTML = `
+        <div class="annot-item__tag">
+          <span class="annot-item__tag-dot" style="background:${color}"></span>
+          ${escHtml(tag?.name || 'Untagged')}
+        </div>
+        <div class="annot-item__text">${ann.type === 'image' ? '[Image area]' : escHtml(ann.selectedText?.slice(0, 200) || '')}</div>
+        ${ann.comment ? `<div class="annot-item__comment">${escHtml(ann.comment)}</div>` : ''}
+        <div class="annot-item__page">p. ${ann.pageNumber}</div>
+      `;
+      list.appendChild(item);
+    });
   }
 
   // ── Render saved annotations ──────────────────
@@ -782,6 +831,7 @@ const Reader = (() => {
       document.getElementById('reader-loaded').style.display = 'none';
       _currentPaperId = null;
       document.querySelectorAll('.sidebar-paper').forEach(el => el.classList.remove('active'));
+      renderAnnotationsPanel(null);
     });
 
     document.getElementById('area-select-btn').addEventListener('click', toggleAreaSelect);
