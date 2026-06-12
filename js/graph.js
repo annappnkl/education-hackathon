@@ -33,16 +33,20 @@ const Graph = (() => {
   function init() {}
 
   function render() {
-    const papers         = State.getPapers();
     const tags           = State.getAllTags();
     const allAnnotations = State.getAllAnnotations();
 
-    // ── Node data ────────────────────────────
+    // ── Build annotation map ─────────────────
     const annotByPaper = {};
     allAnnotations.forEach(a => {
       if (!annotByPaper[a.paperId]) annotByPaper[a.paperId] = [];
       annotByPaper[a.paperId].push(a);
     });
+
+    // Only show papers the user has engaged with (annotated or uploaded full PDF)
+    const papers = State.getPapers().filter(p =>
+      (annotByPaper[p.id] || []).length > 0 || !!p.pdfStorageKey
+    );
 
     const nodes = papers.map(p => {
       const anns    = annotByPaper[p.id] || [];
@@ -169,20 +173,24 @@ const Graph = (() => {
       {
         selector: 'node',
         style: {
-          'background-color': 'data(dominantColor)',
-          'border-width':     0,
-          'width':            10,
-          'height':           10,
-          // Labels hidden by default; appear on hover
-          'label':            'data(label)',
-          'color':            'rgba(255,255,255,0)',
-          'font-size':        '10px',
-          'font-family':      'Inter, sans-serif',
-          'font-weight':      '400',
-          'text-valign':      'bottom',
-          'text-halign':      'center',
-          'text-margin-y':    6,
-          'text-wrap':        'none',
+          'background-color':           'data(dominantColor)',
+          'border-width':               0,
+          'width':                      10,
+          'height':                     10,
+          // Label — always visible with pill background for readability
+          'label':                      'data(label)',
+          'color':                      'rgba(255,255,255,0.85)',
+          'font-size':                  '10px',
+          'font-family':                'Inter, sans-serif',
+          'font-weight':                '400',
+          'text-valign':                'bottom',
+          'text-halign':                'center',
+          'text-margin-y':              6,
+          'text-wrap':                  'none',
+          'text-background-color':      'rgba(14,14,18,0.82)',
+          'text-background-opacity':    1,
+          'text-background-padding':    '3px',
+          'text-background-shape':      'roundrectangle',
         }
       },
       // Scale dot with annotation count
@@ -201,13 +209,15 @@ const Graph = (() => {
           'border-color': 'rgba(245,197,66,0.75)',
         }
       },
-      // Hover: label appears + glow ring
+      // Hover: label brighter + glow ring
       {
         selector: 'node.hovered',
         style: {
-          'color':        'rgba(255,255,255,0.9)',
-          'border-width': 2,
-          'border-color': 'rgba(255,255,255,0.5)',
+          'color':                  'rgba(255,255,255,1)',
+          'font-weight':            '600',
+          'text-background-color':  'rgba(30,30,42,0.96)',
+          'border-width':           2,
+          'border-color':           'rgba(255,255,255,0.55)',
         }
       },
       // Dimmed neighbors when something is hovered
@@ -347,10 +357,50 @@ const Graph = (() => {
     });
 
     _cy.on('mouseout', 'node', () => {
+      _nodeHovered = false;
       _cy.elements().removeClass('hovered dimmed highlighted');
       tooltip.style.display = 'none';
     });
-    // No edge hover events — reasons are shown in node tooltip to avoid flicker
+
+    // ── Edge hover: show relationship reason ──
+    const edgeTooltip = document.getElementById('graph-edge-tooltip');
+    let _nodeHovered    = false;
+    let _edgeTimer      = null;
+
+    // Track when node is hovered so edge tooltip doesn't override it
+    _cy.on('mouseover', 'node', () => { _nodeHovered = true; clearTimeout(_edgeTimer); edgeTooltip.style.display = 'none'; });
+    _cy.on('mouseout',  'node', () => { _nodeHovered = false; });
+
+    _cy.on('mouseover', 'edge', e => {
+      if (_nodeHovered) return;
+      const reason = e.target.data('reason');
+      if (!reason) return;
+      const src = State.getPapers().find(p => p.id === e.target.source().id());
+      const tgt = State.getPapers().find(p => p.id === e.target.target().id());
+      const label = [src?.title, tgt?.title]
+        .filter(Boolean).map(t => truncate(t, 24)).join(' ↔ ');
+
+      _edgeTimer = setTimeout(() => {
+        if (_nodeHovered) return;
+        edgeTooltip.innerHTML = `
+          ${label ? `<div style="font-size:10px;font-weight:600;font-style:normal;color:#2A5C45;margin-bottom:4px">${escHtml(label)}</div>` : ''}
+          ${escHtml(reason)}
+        `;
+        edgeTooltip.style.display = 'block';
+      }, 90);
+    });
+
+    _cy.on('mousemove', e => {
+      if (edgeTooltip.style.display !== 'none') {
+        edgeTooltip.style.left = (e.originalEvent.clientX + 14) + 'px';
+        edgeTooltip.style.top  = (e.originalEvent.clientY - 10) + 'px';
+      }
+    });
+
+    _cy.on('mouseout', 'edge', () => {
+      clearTimeout(_edgeTimer);
+      edgeTooltip.style.display = 'none';
+    });
   }
 
   // ── Legend ────────────────────────────────
