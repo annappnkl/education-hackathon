@@ -265,7 +265,7 @@ const State = (() => {
 
   return {
     get, setScreen, setWorkspaceMode,
-    createProject, getProject,
+    createProject, getProject, getAllProjects, switchProject,
     addChatMessage,
     addPapers, getPapers, updatePaper,
     getAllTags, addCustomTag, getTagById,
