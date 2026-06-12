@@ -58,11 +58,11 @@ const Discovery = (() => {
       updateImportButton();
     } catch(err) {
       loading.remove();
-      console.error('Semantic Scholar error:', err);
+      console.error('Paper search error:', err);
       list.innerHTML = `
         <div class="empty-state">
           <span class="icon">wifi_off</span>
-          <p>Could not reach Semantic Scholar.<br><span style="font-size:11px;color:var(--color-text-tertiary)">${escHtml(err.message)}</span></p>
+          <p>Could not load papers.<br><span style="font-size:11px;color:var(--color-text-tertiary)">${escHtml(err.message)}</span></p>
         </div>`;
     }
   }
@@ -76,6 +76,7 @@ const Discovery = (() => {
     const year    = paper.year || '—';
     const cites   = paper.citations?.toLocaleString() ?? '—';
     const hasOA   = !!paper.openAccessUrl;
+    const sourceLabel = { openalex: 'OpenAlex', crossref: 'CrossRef', core: 'CORE', europepmc: 'Europe PMC', upload: 'Uploaded' }[paper.source] || paper.source;
 
     card.innerHTML = `
       <div class="paper-card__check">
@@ -93,7 +94,8 @@ const Discovery = (() => {
           <span class="paper-card__meta-item">
             <span class="icon">format_quote</span>${cites} citations
           </span>
-          ${hasOA ? `<span class="badge badge--primary" style="margin-left:auto">Open Access</span>` : ''}
+          <span class="badge badge--neutral" style="margin-left:auto">${escHtml(sourceLabel)}</span>
+          ${hasOA ? `<span class="badge badge--primary">Open Access</span>` : ''}
         </div>
         <div class="paper-card__abstract">${escHtml(paper.abstract || 'No abstract available.')}</div>
         ${paper.abstract && paper.abstract.length > 200 ? `
