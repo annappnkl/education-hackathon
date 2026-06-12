@@ -19,14 +19,14 @@
   --color-primary-subtle:  #EAF4EE;   /* lightest tint, page bg */
 
   /* Surface */
-  --color-bg:              #EAF4EE;   /* app background */
+  --color-bg:              #D6E8DC;   /* app background */
   --color-surface:         #FFFFFF;   /* cards, panels */
   --color-surface-raised:  #F5FAF7;   /* nested / secondary surface */
 
   /* Text */
   --color-text-primary:    #1A2E25;   /* headings, primary content */
-  --color-text-secondary:  #5A7268;   /* labels, captions */
-  --color-text-tertiary:   #9AB8AD;   /* placeholders, disabled */
+  --color-text-secondary:  #3A5248;   /* labels, captions */
+  --color-text-tertiary:   #6A8C7E;   /* placeholders, disabled */
   --color-text-on-primary: #FFFFFF;
 
   /* Border */
@@ -340,8 +340,8 @@ h5 { font-size: var(--font-size-base); }
   padding: var(--space-3) var(--space-6);
 }
 .btn--lg {
-  padding: var(--space-4) var(--space-8);
-  font-size: var(--font-size-md);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--font-size-sm);
 }
 
 /* Variants */
