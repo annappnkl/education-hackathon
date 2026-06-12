@@ -93,14 +93,21 @@ const Writer = (() => {
     });
 
     const project = State.getProject();
+    const allTags = State.getAllTags();
+
+    const sectionList = allTags.map(t => `  - tagId="${t.id}", name="${t.name}"`).join('\n');
 
     const systemPrompt = `You are a research writing assistant helping a student write a ${project?.type || 'research paper'}.
-The student has annotated excerpts from academic papers and tagged them by section (Gap, Abstract, Methodology, etc.).
+The student has annotated excerpts from academic papers. Each annotation has a tag the student assigned, but you should use your judgement to place it in the best section.
+
+The full section structure for this ${project?.type || 'paper'} is:
+${sectionList}
 
 Your task:
-1. Group the annotations by their tag (these become the main sections).
-2. Within each tag group, cluster annotations by thematic similarity and give each cluster a SHORT descriptive sub-heading (3-6 words).
-3. Return ONLY valid JSON in this exact structure — no prose, no markdown, no code fences:
+1. Evaluate EACH annotation and assign it to the section where it best fits academically (use the student's tag as a strong hint, but override if clearly wrong).
+2. Within each section, cluster annotations by thematic similarity and give each cluster a SHORT descriptive sub-heading (3-6 words).
+3. Only include sections that have at least one annotation.
+4. Return ONLY valid JSON in this exact structure — no prose, no markdown, no code fences:
 
 {
   "sections": [
@@ -118,10 +125,12 @@ Your task:
 }
 
 Rules:
-- Use the tagId values exactly as provided.
+- Use ONLY tagId values from the section list above.
+- Order sections in the same order as the section list.
 - Cluster by THEME first, then chronologically within each cluster.
-- If a tag has only 1-2 annotations, put them in a single cluster with an appropriate title.
-- Never invent annotations — only use the indices provided.`;
+- If a section has only 1-2 annotations, put them in a single cluster with an appropriate title.
+- Never invent annotations — only use the indices provided.
+- Each annotation index must appear exactly once.`;
 
     const userMsg = `Project topic: ${project?.topic || 'unknown'}
 Project type: ${project?.type || 'paper'}
@@ -154,12 +163,16 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
 
   // ── Render LLM-structured outline into editor ─
   function renderOutlineIntoEditor(sections, annotList) {
-    const doc = document.getElementById('editor-doc');
-    let html  = '';
+    const doc  = document.getElementById('editor-doc');
+    const tags = State.getAllTags();
+    let html   = '';
 
+    // Render LLM-populated sections
+    const renderedTagIds = new Set();
     sections.forEach(section => {
       const tag = State.getTagById(section.tagId);
       const color = tag?.color || '#2A5C45';
+      renderedTagIds.add(section.tagId);
 
       html += `<h2 style="color:${color};margin-top:2em;margin-bottom:0.4em;font-size:20px">${escHtml(section.tagName)}</h2>`;
 
@@ -186,6 +199,13 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
       });
     });
 
+    // Append empty sections for tags not yet annotated (preserve thesis structure)
+    tags.forEach(tag => {
+      if (renderedTagIds.has(tag.id)) return;
+      html += `<h2 style="color:${tag.color};margin-top:2em;margin-bottom:0.4em;font-size:20px">${escHtml(tag.name)}</h2>`;
+      html += `<p style="min-height:1.5em;color:var(--color-text-tertiary);font-size:13px" data-placeholder="No excerpts tagged yet — write here or tag annotations in Reading mode"><br></p>`;
+    });
+
     doc.innerHTML = html || '<p><br></p>';
     State.saveWritingContent(doc.innerHTML);
     updateWordCount();
@@ -201,23 +221,25 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
     });
 
     let html = '';
-    Object.keys(byTag).forEach(tagId => {
-      const tag   = State.getTagById(tagId);
-      const items = byTag[tagId];
+    // Render all tags in preset order — populated or empty
+    tags.forEach(tag => {
       const color = tag?.color || '#2A5C45';
+      const items = byTag[tag.id] || [];
 
-      html += `<h2 style="color:${color};margin-top:2em;margin-bottom:0.8em;font-size:20px">${escHtml(tag?.name || 'Unknown')}</h2>`;
+      html += `<h2 style="color:${color};margin-top:2em;margin-bottom:0.8em;font-size:20px">${escHtml(tag.name)}</h2>`;
 
-      items.sort((a, b) => (b.year || 0) - (a.year || 0)).forEach(ann => {
-        if (ann.text !== '[Image area]') {
-          html += `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
-        }
-        if (ann.comment) {
-          html += `<p style="font-size:13px;color:var(--color-text-secondary);margin:2px 0 10px 17px;font-style:italic">${escHtml(ann.comment)}</p>`;
-        }
-      });
+      if (items.length) {
+        items.sort((a, b) => (b.year || 0) - (a.year || 0)).forEach(ann => {
+          if (ann.text !== '[Image area]') {
+            html += `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
+          }
+          if (ann.comment) {
+            html += `<p style="font-size:13px;color:var(--color-text-secondary);margin:2px 0 10px 17px;font-style:italic">${escHtml(ann.comment)}</p>`;
+          }
+        });
+      }
 
-      html += `<p><br></p>`;
+      html += `<p style="min-height:1.5em;color:var(--color-text-tertiary);font-size:13px"><br></p>`;
     });
 
     doc.innerHTML = html || '<p><br></p>';
