@@ -1,26 +1,35 @@
 /* ─────────────────────────────────────────────
    Writing mode
-   Left: tagged excerpts grouped by theme (LLM) then chronological
-   Right: contenteditable text editor
+   Left:  tagged excerpts (refs panel)
+   Right: contenteditable editor, pre-populated
+          by LLM outline from tagged annotations
 ───────────────────────────────────────────── */
 
 const Writer = (() => {
+
+  let _outlineGenerated = false;
 
   function init() {
     initEditor();
     initToolbar();
     renderRefs();
+
+    // Auto-generate outline if editor is empty and annotations exist
+    const doc         = document.getElementById('editor-doc');
+    const annotations = State.getAllAnnotations();
+    const isEmpty     = !doc.innerText.trim();
+
+    if (isEmpty && annotations.length > 0) {
+      generateOutline({ silent: true });
+    }
   }
 
   // ── Editor ────────────────────────────────────
   function initEditor() {
-    const doc = document.getElementById('editor-doc');
-
-    // Restore saved content
+    const doc   = document.getElementById('editor-doc');
     const saved = State.getWritingContent();
     if (saved) doc.innerHTML = saved;
 
-    // Auto-save
     doc.addEventListener('input', () => {
       State.saveWritingContent(doc.innerHTML);
       updateWordCount();
@@ -30,14 +39,190 @@ const Writer = (() => {
   }
 
   function updateWordCount() {
-    const doc  = document.getElementById('editor-doc');
-    const text = doc.innerText.trim();
+    const doc   = document.getElementById('editor-doc');
+    const text  = doc.innerText.trim();
     const count = text ? text.split(/\s+/).length : 0;
-    document.getElementById('word-count').textContent = `${count.toLocaleString()} word${count !== 1 ? 's' : ''}`;
+    document.getElementById('word-count').textContent =
+      `${count.toLocaleString()} word${count !== 1 ? 's' : ''}`;
   }
 
   function initToolbar() {
-    document.getElementById('cluster-btn').addEventListener('click', recluster);
+    document.getElementById('cluster-btn').addEventListener('click', () => {
+      const doc     = document.getElementById('editor-doc');
+      const hasText = doc.innerText.trim().length > 0;
+
+      if (hasText && _outlineGenerated) {
+        if (!confirm('This will replace your current outline with a freshly generated one. Your written paragraphs will be cleared. Continue?')) return;
+      }
+      generateOutline({ silent: false });
+    });
+  }
+
+  // ── LLM outline generation ────────────────────
+  async function generateOutline({ silent = false } = {}) {
+    const btn         = document.getElementById('cluster-btn');
+    const annotations = State.getAllAnnotations();
+    const tags        = State.getAllTags();
+
+    if (!annotations.length) return;
+
+    btn.disabled = true;
+    btn.querySelector('.icon').textContent = 'hourglass_empty';
+
+    // Show generating indicator in editor
+    const doc = document.getElementById('editor-doc');
+    const placeholder = document.createElement('div');
+    placeholder.id = 'outline-generating';
+    placeholder.style.cssText = 'display:flex;align-items:center;gap:12px;color:var(--color-text-tertiary);font-size:13px;padding:8px 0';
+    placeholder.innerHTML = `<div class="loading-spinner"></div> Analysing your annotations and building an outline…`;
+    doc.innerHTML = '';
+    doc.appendChild(placeholder);
+
+    // Build annotation list for LLM
+    const annotList = annotations.map((a, i) => {
+      const tag = tags.find(t => t.id === a.tagId);
+      return {
+        index: i,
+        tag: tag?.name || 'Unknown',
+        tagId: a.tagId,
+        text: a.type === 'image' ? '[Image area]' : a.selectedText,
+        comment: a.comment || '',
+        paper: a.paperTitle,
+        year: a.paperYear || '?',
+      };
+    });
+
+    const project = State.getProject();
+
+    const systemPrompt = `You are a research writing assistant helping a student write a ${project?.type || 'research paper'}.
+The student has annotated excerpts from academic papers and tagged them by section (Gap, Abstract, Methodology, etc.).
+
+Your task:
+1. Group the annotations by their tag (these become the main sections).
+2. Within each tag group, cluster annotations by thematic similarity and give each cluster a SHORT descriptive sub-heading (3-6 words).
+3. Return ONLY valid JSON in this exact structure — no prose, no markdown, no code fences:
+
+{
+  "sections": [
+    {
+      "tagId": "the_tag_id",
+      "tagName": "Tag Name",
+      "clusters": [
+        {
+          "title": "Short Cluster Title",
+          "annotationIndices": [0, 2, 4]
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+- Use the tagId values exactly as provided.
+- Cluster by THEME first, then chronologically within each cluster.
+- If a tag has only 1-2 annotations, put them in a single cluster with an appropriate title.
+- Never invent annotations — only use the indices provided.`;
+
+    const userMsg = `Project topic: ${project?.topic || 'unknown'}
+Project type: ${project?.type || 'paper'}
+
+Annotations (${annotList.length} total):
+${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${a.paper}" (${a.year})\n  Text: "${a.text.slice(0, 200)}"\n  Comment: "${a.comment}"`).join('\n\n')}`;
+
+    try {
+      const reply   = await API.chatLLM([
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userMsg },
+      ]);
+
+      const jsonMatch = reply.match(/\{[\s\S]+\}/);
+      if (!jsonMatch) throw new Error('No JSON returned');
+
+      const result = JSON.parse(jsonMatch[0]);
+      renderOutlineIntoEditor(result.sections, annotList);
+      _outlineGenerated = true;
+
+    } catch (err) {
+      console.error('Outline generation failed:', err);
+      // Fall back to simple structured dump without LLM clustering
+      renderFallbackOutline(annotList, tags);
+    }
+
+    btn.disabled = false;
+    btn.querySelector('.icon').textContent = 'auto_awesome';
+  }
+
+  // ── Render LLM-structured outline into editor ─
+  function renderOutlineIntoEditor(sections, annotList) {
+    const doc = document.getElementById('editor-doc');
+    let html  = '';
+
+    sections.forEach(section => {
+      const tag = State.getTagById(section.tagId);
+      const color = tag?.color || '#2A5C45';
+
+      html += `<h2 style="color:${color};margin-top:2em;margin-bottom:0.4em;font-size:20px">${escHtml(section.tagName)}</h2>`;
+
+      (section.clusters || []).forEach(cluster => {
+        html += `<h3 style="margin-top:1.2em;margin-bottom:0.5em;font-size:15px;font-weight:600;color:var(--color-text-primary)">${escHtml(cluster.title)}</h3>`;
+
+        (cluster.annotationIndices || []).forEach(idx => {
+          const ann = annotList[idx];
+          if (!ann) return;
+
+          if (ann.text === '[Image area]') {
+            html += `<p style="background:var(--color-bg);border-left:3px solid ${color};padding:8px 12px;margin:6px 0;font-size:13px;color:var(--color-text-secondary)">[Image from ${escHtml(ann.paper)}, ${ann.year}]</p>`;
+          } else {
+            html += `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;color:var(--color-text-primary);background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
+          }
+
+          if (ann.comment) {
+            html += `<p style="font-size:13px;color:var(--color-text-secondary);margin:2px 0 10px 17px;font-style:italic">${escHtml(ann.comment)}</p>`;
+          }
+        });
+
+        // Writing prompt placeholder after each cluster
+        html += `<p style="min-height:1.5em;color:var(--color-text-tertiary);font-size:13px" data-placeholder="Write your synthesis here…"><br></p>`;
+      });
+    });
+
+    doc.innerHTML = html || '<p><br></p>';
+    State.saveWritingContent(doc.innerHTML);
+    updateWordCount();
+  }
+
+  // ── Fallback: simple dump when LLM unavailable ─
+  function renderFallbackOutline(annotList, tags) {
+    const doc   = document.getElementById('editor-doc');
+    const byTag = {};
+    annotList.forEach(a => {
+      if (!byTag[a.tagId]) byTag[a.tagId] = [];
+      byTag[a.tagId].push(a);
+    });
+
+    let html = '';
+    Object.keys(byTag).forEach(tagId => {
+      const tag   = State.getTagById(tagId);
+      const items = byTag[tagId];
+      const color = tag?.color || '#2A5C45';
+
+      html += `<h2 style="color:${color};margin-top:2em;margin-bottom:0.8em;font-size:20px">${escHtml(tag?.name || 'Unknown')}</h2>`;
+
+      items.sort((a, b) => (b.year || 0) - (a.year || 0)).forEach(ann => {
+        if (ann.text !== '[Image area]') {
+          html += `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
+        }
+        if (ann.comment) {
+          html += `<p style="font-size:13px;color:var(--color-text-secondary);margin:2px 0 10px 17px;font-style:italic">${escHtml(ann.comment)}</p>`;
+        }
+      });
+
+      html += `<p><br></p>`;
+    });
+
+    doc.innerHTML = html || '<p><br></p>';
+    State.saveWritingContent(doc.innerHTML);
+    updateWordCount();
   }
 
   // ── Refs panel ────────────────────────────────
@@ -56,18 +241,15 @@ const Writer = (() => {
       return;
     }
 
-    // Group annotations by tag
     const byTag = {};
     annotations.forEach(ann => {
       if (!byTag[ann.tagId]) byTag[ann.tagId] = [];
       byTag[ann.tagId].push(ann);
     });
 
-    // Sort tags: preset order first, then custom
-    const tagOrder = tags.map(t => t.id);
+    const tagOrder    = tags.map(t => t.id);
     const sortedTagIds = Object.keys(byTag).sort((a, b) => {
-      const ia = tagOrder.indexOf(a);
-      const ib = tagOrder.indexOf(b);
+      const ia = tagOrder.indexOf(a), ib = tagOrder.indexOf(b);
       if (ia === -1 && ib === -1) return 0;
       if (ia === -1) return 1;
       if (ib === -1) return -1;
@@ -77,48 +259,33 @@ const Writer = (() => {
     sortedTagIds.forEach(tagId => {
       const tag   = State.getTagById(tagId);
       if (!tag) return;
-      const items = byTag[tagId];
+      const items = byTag[tagId].slice().sort((a, b) => (b.paperYear || 0) - (a.paperYear || 0));
 
-      // Sort: group by theme (paper), then chronological within theme
-      const sorted = items.slice().sort((a, b) => {
-        if (a.paperId !== b.paperId) {
-          const yearA = a.paperYear || 0;
-          const yearB = b.paperYear || 0;
-          return yearB - yearA; // newest paper first
-        }
-        return new Date(a.createdAt) - new Date(b.createdAt);
-      });
-
-      const group = document.createElement('div');
+      const group    = document.createElement('div');
       group.className = 'ref-group';
-
       group.innerHTML = `
         <div class="ref-group__header">
           <span class="ref-group__name">
             <span style="width:8px;height:8px;border-radius:50%;background:${tag.color};flex-shrink:0"></span>
             ${escHtml(tag.name)}
           </span>
-          <span class="ref-group__count">${sorted.length}</span>
+          <span class="ref-group__count">${items.length}</span>
         </div>
         <div class="ref-group__items" id="ref-items-${tagId}"></div>
       `;
 
-      // Toggle expand/collapse
       let collapsed = false;
       const header   = group.querySelector('.ref-group__header');
       const itemsDiv = group.querySelector('.ref-group__items');
-
       header.addEventListener('click', () => {
         collapsed = !collapsed;
         itemsDiv.style.display = collapsed ? 'none' : '';
       });
 
-      // Build items
-      sorted.forEach(ann => {
-        const item = document.createElement('div');
+      items.forEach(ann => {
+        const item     = document.createElement('div');
         item.className = 'ref-item';
-
-        const isImage = ann.type === 'image';
+        const isImage  = ann.type === 'image';
         item.innerHTML = `
           <div class="ref-item__source">
             <span class="icon" style="font-size:11px">${isImage ? 'image' : 'format_quote'}</span>
@@ -127,11 +294,8 @@ const Writer = (() => {
           <div class="ref-item__text">${isImage ? '[Image area]' : escHtml(truncate(ann.selectedText, 160))}</div>
           ${ann.comment ? `<div class="ref-item__comment">${escHtml(ann.comment)}</div>` : ''}
         `;
-
-        // Click → insert citation into editor
-        item.addEventListener('click', () => insertIntoEditor(ann));
-        item.title = 'Click to insert into editor';
-
+        item.addEventListener('click', () => scrollEditorToAnnotation(ann));
+        item.title = 'Click to jump to this excerpt in the editor';
         itemsDiv.appendChild(item);
       });
 
@@ -139,83 +303,49 @@ const Writer = (() => {
     });
   }
 
-  // ── Insert excerpt into editor ────────────────
+  // ── Click ref → scroll editor to matching blockquote ──
+  function scrollEditorToAnnotation(ann) {
+    const doc   = document.getElementById('editor-doc');
+    const bqs   = doc.querySelectorAll('blockquote');
+    const short = ann.selectedText?.slice(0, 40).toLowerCase();
+    for (const bq of bqs) {
+      if (bq.textContent.toLowerCase().includes(short)) {
+        bq.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        bq.style.outline = '2px solid var(--color-primary)';
+        setTimeout(() => bq.style.outline = '', 1500);
+        return;
+      }
+    }
+    // Fallback: insert at cursor
+    insertIntoEditor(ann);
+  }
+
+  // ── Insert excerpt into editor (manual) ───────
   function insertIntoEditor(ann) {
-    const doc = document.getElementById('editor-doc');
-    const tag = State.getTagById(ann.tagId);
+    const doc  = document.getElementById('editor-doc');
+    const tag  = State.getTagById(ann.tagId);
+    const color = tag?.color || '#2A5C45';
     doc.focus();
 
-    const citationText = ann.type === 'image'
-      ? `[Image from ${ann.paperTitle} (${ann.paperYear || '?'})]`
-      : `"${ann.selectedText}" (${ann.paperTitle}, ${ann.paperYear || '?'})`;
+    const html = ann.type === 'image'
+      ? `<p style="background:var(--color-bg);border-left:3px solid ${color};padding:8px 12px;margin:6px 0;font-size:13px">[Image from ${escHtml(ann.paperTitle)} (${ann.paperYear || '?'})]</p>`
+      : `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;background:var(--color-bg)">"${escHtml(ann.selectedText)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paperTitle)}, ${ann.paperYear || '?'}</span></blockquote>${ann.comment ? `<p style="font-size:13px;color:var(--color-text-secondary);margin:2px 0 10px 17px;font-style:italic">${escHtml(ann.comment)}</p>` : ''}`;
 
-    // Insert at cursor position or end
     const sel = window.getSelection();
     if (sel && sel.rangeCount && doc.contains(sel.anchorNode)) {
       const range = sel.getRangeAt(0);
       range.collapse(false);
-      const node = document.createTextNode(citationText + ' ');
-      range.insertNode(node);
-      range.setStartAfter(node);
-      range.setEndAfter(node);
-      sel.removeAllRanges();
-      sel.addRange(range);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const frag = document.createDocumentFragment();
+      while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+      range.insertNode(frag);
     } else {
-      // Append to end
-      doc.innerHTML += `<p>${escHtml(citationText)}</p>`;
+      doc.innerHTML += html;
     }
 
     State.saveWritingContent(doc.innerHTML);
     updateWordCount();
-  }
-
-  // ── Re-cluster (LLM) ─────────────────────────
-  async function recluster() {
-    const btn = document.getElementById('cluster-btn');
-    btn.disabled = true;
-    btn.querySelector('.icon').textContent = 'hourglass_empty';
-
-    try {
-      // Build a summary of all annotations for the LLM
-      const annotations = State.getAllAnnotations();
-      const tags = State.getAllTags();
-
-      const summary = annotations.map(a => {
-        const tag = tags.find(t => t.id === a.tagId);
-        return `[${tag?.name || 'Unknown'}] "${a.selectedText}" — ${a.paperTitle} (${a.paperYear}). Comment: ${a.comment || 'none'}`;
-      }).join('\n');
-
-      const messages = [
-        {
-          role: 'system',
-          content: `You are a research assistant helping organise annotated excerpts from academic papers.
-Given a list of annotations, group them by thematic similarity within each tag category.
-Return a JSON object: { "tagId": ["annotationIndex1", "annotationIndex2", ...], ... }
-where annotationIndex is the 0-based index of the annotation in the input list.
-Group by theme first, then chronologically within each theme. Keep the same tag groupings.`,
-        },
-        {
-          role: 'user',
-          content: `Annotations:\n${summary}`,
-        }
-      ];
-
-      const reply = await API.chatLLM(messages);
-
-      // Try to parse JSON from reply
-      const jsonMatch = reply.match(/\{[\s\S]+\}/);
-      if (!jsonMatch) throw new Error('No JSON in response');
-
-      const ordering = JSON.parse(jsonMatch[0]);
-      // TODO: reorder the refs panel based on LLM ordering
-      // For now, just re-render (LLM API not connected yet)
-      renderRefs();
-    } catch(err) {
-      console.warn('Recluster failed', err);
-    }
-
-    btn.disabled = false;
-    btn.querySelector('.icon').textContent = 'auto_awesome';
   }
 
   function truncate(str, n) {
