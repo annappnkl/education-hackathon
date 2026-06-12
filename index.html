@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Research Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- Cytoscape.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+</head>
+<body>
+
+  <!-- ── SCREEN 1: Onboarding ── -->
+  <div id="screen-onboarding" class="screen active">
+    <div class="onboarding">
+      <div class="onboarding__header">
+        <div class="onboarding__title">Research Studio</div>
+        <div class="onboarding__subtitle">What are you working on?</div>
+        <div class="preset-bar" id="preset-bar">
+          <button class="preset-chip" data-type="thesis">Thesis</button>
+          <button class="preset-chip" data-type="paper">Research Paper</button>
+          <button class="preset-chip" data-type="poster">Poster</button>
+          <button class="preset-chip" data-type="other">Other</button>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chat-messages"></div>
+
+      <div class="chat-input-area" id="chat-input-area">
+        <div class="chat-input-attachments" id="chat-attachments"></div>
+        <div class="chat-input-row">
+          <button class="btn btn--icon btn--ghost" id="attach-btn" title="Add file or link">
+            <span class="icon">add</span>
+          </button>
+          <textarea
+            class="chat-textarea"
+            id="chat-input"
+            placeholder="Describe your research, paste a link, or ask anything…"
+            rows="1"
+          ></textarea>
+          <button class="btn btn--primary btn--sm" id="chat-send" style="flex-shrink:0">
+            <span class="icon icon--on-primary icon--sm">arrow_upward</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hidden file input -->
+      <input type="file" id="file-input" accept=".pdf" multiple style="display:none" />
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: Paper Discovery ── -->
+  <div id="screen-discovery" class="screen">
+    <div class="discovery">
+      <div class="discovery__header">
+        <button class="btn btn--ghost btn--sm" id="discovery-back">
+          <span class="icon icon--sm">arrow_back</span>
+          Back
+        </button>
+        <div class="discovery__title-group">
+          <div class="discovery__topic" id="discovery-topic-label"></div>
+          <h2 id="discovery-heading">Papers found</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-3)">
+          <button class="btn btn--ghost btn--sm" id="discovery-more">
+            <span class="icon icon--sm">refresh</span>
+            Find more
+          </button>
+          <button class="btn btn--primary btn--md" id="discovery-import">
+            Import selected
+            <span class="badge badge--neutral" id="selected-count" style="margin-left:4px">0</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="discovery__list" id="discovery-list">
+        <div class="empty-state" id="discovery-loading" style="display:none">
+          <div class="loading-spinner"></div>
+          <p>Searching Semantic Scholar…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: Workspace ── -->
+  <div id="screen-workspace" class="screen">
+    <div class="workspace">
+
+      <!-- Top bar -->
+      <div class="workspace__topbar">
+        <button class="btn btn--ghost btn--sm" id="workspace-back" title="Back to discovery">
+          <span class="icon icon--sm">arrow_back</span>
+        </button>
+        <span class="workspace__project-name" id="workspace-project-name"></span>
+
+        <!-- Mode tabs -->
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="reading">
+            <span class="icon">menu_book</span>
+            Reading
+          </button>
+          <button class="mode-tab" data-mode="graph">
+            <span class="icon">hub</span>
+            Graph
+          </button>
+          <button class="mode-tab" data-mode="writing">
+            <span class="icon">edit_note</span>
+            Writing
+          </button>
+        </div>
+
+        <button class="btn btn--secondary btn--sm" id="add-papers-btn">
+          <span class="icon icon--primary icon--sm">add</span>
+          Add papers
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="workspace__body">
+
+        <!-- ── READING MODE ── -->
+        <div class="reader" id="mode-reading">
+
+          <!-- Sidebar -->
+          <div class="reader__sidebar">
+            <div class="reader__sidebar-header">
+              <span class="reader__sidebar-title">Papers</span>
+              <button class="btn btn--icon btn--ghost" id="upload-pdf-btn" title="Upload PDF">
+                <span class="icon icon--sm">upload_file</span>
+              </button>
+            </div>
+            <div class="reader__sidebar-list" id="sidebar-paper-list"></div>
+          </div>
+
+          <!-- PDF panel -->
+          <div class="reader__panel">
+            <!-- Empty state -->
+            <div class="reader__panel-empty" id="reader-empty">
+              <span class="icon icon--muted">picture_as_pdf</span>
+              <p class="text-sm text-tertiary">Select a paper to start reading</p>
+            </div>
+
+            <!-- Loaded state -->
+            <div id="reader-loaded" style="display:none;flex:1;flex-direction:column;overflow:hidden;position:relative;">
+              <div class="reader__panel-toolbar">
+                <button class="btn btn--icon btn--ghost btn--sm" id="reader-close">
+                  <span class="icon icon--sm">close</span>
+                </button>
+                <span class="reader__panel-title" id="reader-paper-title"></span>
+                <div style="display:flex;gap:var(--space-1)">
+                  <button class="btn btn--icon btn--ghost btn--sm" id="area-select-btn" title="Annotate image area">
+                    <span class="icon icon--sm">crop</span>
+                  </button>
+                  <button class="btn btn--icon btn--ghost btn--sm" id="explain-selection-btn" title="Explain selection">
+                    <span class="icon icon--sm">auto_awesome</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="pdf-viewport" id="pdf-viewport"></div>
+
+              <!-- Takeaway button -->
+              <button class="takeaway-btn" id="takeaway-btn">
+                <span class="icon">sticky_note_2</span>
+                Paper notes
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── GRAPH MODE ── -->
+        <div class="graph-view" id="mode-graph" style="display:none">
+          <div id="cy"></div>
+          <div class="graph-legend" id="graph-legend">
+            <div class="graph-legend__title">Tags</div>
+          </div>
+          <div class="graph-tooltip" id="graph-tooltip" style="display:none"></div>
+        </div>
+
+        <!-- ── WRITING MODE ── -->
+        <div class="writer" id="mode-writing" style="display:none">
+
+          <!-- Refs panel -->
+          <div class="writer__refs">
+            <div class="writer__refs-header">
+              <span class="writer__refs-title">Tagged excerpts</span>
+              <button class="btn btn--icon btn--ghost btn--sm" id="cluster-btn" title="Re-cluster by theme">
+                <span class="icon icon--sm">auto_awesome</span>
+              </button>
+            </div>
+            <div class="writer__refs-list" id="refs-list"></div>
+          </div>
+
+          <!-- Editor -->
+          <div class="writer__editor-area">
+            <div class="writer__editor-toolbar">
+              <button class="btn btn--icon btn--ghost btn--sm" onclick="document.execCommand('bold')" title="Bold">
+                <span class="icon icon--sm">format_bold</span>
+              </button>
+              <button class="btn btn--icon btn--ghost btn--sm" onclick="document.execCommand('italic')" title="Italic">
+                <span class="icon icon--sm">format_italic</span>
+              </button>
+              <button class="btn btn--icon btn--ghost btn--sm" onclick="document.execCommand('underline')" title="Underline">
+                <span class="icon icon--sm">format_underlined</span>
+              </button>
+              <div style="width:1px;height:20px;background:var(--color-border);margin:0 var(--space-1)"></div>
+              <button class="btn btn--icon btn--ghost btn--sm" onclick="document.execCommand('insertUnorderedList')" title="Bullet list">
+                <span class="icon icon--sm">format_list_bulleted</span>
+              </button>
+              <button class="btn btn--icon btn--ghost btn--sm" onclick="document.execCommand('insertOrderedList')" title="Numbered list">
+                <span class="icon icon--sm">format_list_numbered</span>
+              </button>
+              <span class="writer__word-count" id="word-count">0 words</span>
+            </div>
+            <div class="writer__editor">
+              <div
+                class="editor-doc"
+                id="editor-doc"
+                contenteditable="true"
+                data-placeholder="Start writing your paper here…"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAKEAWAY MODAL ── -->
+  <div class="modal-overlay" id="takeaway-modal" style="display:none">
+    <div class="modal">
+      <div class="modal__header">
+        <h3>Paper notes</h3>
+        <button class="btn btn--icon btn--ghost btn--sm" id="takeaway-close">
+          <span class="icon icon--sm">close</span>
+        </button>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:var(--space-2)">Importance</div>
+        <div class="star-rating" id="star-rating">
+          <span class="star-rating__star" data-value="1">star</span>
+          <span class="star-rating__star" data-value="2">star</span>
+          <span class="star-rating__star" data-value="3">star</span>
+          <span class="star-rating__star" data-value="4">star</span>
+          <span class="star-rating__star" data-value="5">star</span>
+        </div>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:var(--space-2)">Your takeaway</div>
+        <textarea
+          class="takeaway-textarea"
+          id="takeaway-text"
+          placeholder="What does this paper mean for your research? Key insights, doubts, relevance…"
+        ></textarea>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:var(--space-2)">
+        <button class="btn btn--ghost btn--md" id="takeaway-cancel">Cancel</button>
+        <button class="btn btn--primary btn--md" id="takeaway-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ANNOTATION CARD (injected by JS) ── -->
+
+  <!-- Hidden upload input (workspace) -->
+  <input type="file" id="pdf-upload-input" accept=".pdf" style="display:none" />
+
+  <!-- JS modules -->
+  <script src="js/state.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/discovery.js"></script>
+  <script src="js/reader.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/writer.js"></script>
+  <script src="js/workspace.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
