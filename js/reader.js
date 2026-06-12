@@ -98,36 +98,20 @@ const Reader = (() => {
     viewport.innerHTML = '';
     _pageWrappers = {};
 
-    // Load PDF
+    // Load PDF — try stored, then direct URL, then CORS proxy
     let pdfData = await State.getPDF(paper.pdfStorageKey || paper.id);
     if (!pdfData && paper.openAccessUrl) {
       pdfData = await fetchPDFBuffer(paper.openAccessUrl);
+      if (!pdfData) {
+        // Try via CORS proxy
+        pdfData = await fetchPDFBuffer('https://corsproxy.io/?' + encodeURIComponent(paper.openAccessUrl));
+      }
       if (pdfData) await State.storePDF(paper.id, pdfData);
     }
 
     if (!pdfData) {
-      viewport.innerHTML = `
-        <div class="empty-state">
-          <span class="icon">link_off</span>
-          <p>No PDF available. The paper metadata is still shown in the graph and writing views.</p>
-          <div style="margin-top:var(--space-4)">
-            <label class="btn btn--secondary btn--md" style="cursor:pointer">
-              <span class="icon icon--primary icon--sm">upload_file</span>Upload PDF
-              <input type="file" accept=".pdf" style="display:none" id="inline-upload" />
-            </label>
-          </div>
-        </div>`;
-      const inlineUpload = document.getElementById('inline-upload');
-      if (inlineUpload) {
-        inlineUpload.addEventListener('change', async () => {
-          const f = inlineUpload.files[0];
-          if (!f) return;
-          const buf = await f.arrayBuffer();
-          await State.storePDF(paper.id, buf);
-          State.updatePaper(paper.id, { pdfStorageKey: paper.id });
-          openPaper(paper.id);
-        });
-      }
+      // Render abstract view — always readable and annotatable
+      renderAbstractView(paper, viewport);
       return;
     }
 
@@ -151,6 +135,74 @@ const Reader = (() => {
       if (!res.ok) return null;
       return await res.arrayBuffer();
     } catch { return null; }
+  }
+
+  // ── Abstract / metadata view (when no PDF) ───
+  function renderAbstractView(paper, container) {
+    const authors  = (paper.authors || []).join(', ') || 'Unknown authors';
+    const doiLink  = paper.doi ? `<a href="https://doi.org/${paper.doi}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px"><span class="icon icon--sm">open_in_new</span>DOI</a>` : '';
+    const oaLink   = paper.openAccessUrl ? `<a href="${escHtml(paper.openAccessUrl)}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px"><span class="icon icon--sm">open_in_new</span>Open Access page</a>` : '';
+    const uploadBtn = `<label class="btn btn--secondary btn--sm" style="cursor:pointer;font-size:11px"><span class="icon icon--primary icon--sm">upload_file</span>Upload PDF<input type="file" accept=".pdf" style="display:none" id="inline-upload" /></label>`;
+
+    // Wrapper acts like a single "page" for annotation purposes
+    const pageNum = 1;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'pdf-page-wrapper abstract-page';
+    wrapper.dataset.page = pageNum;
+    wrapper.style.cssText = 'width:680px;background:#fff;padding:48px 56px;font-family:var(--font-family);box-sizing:border-box;';
+
+    wrapper.innerHTML = `
+      <div style="margin-bottom:32px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);margin-bottom:8px">${escHtml(paper.source?.toUpperCase() || 'PAPER')}</div>
+        <h1 style="font-size:22px;font-weight:700;line-height:1.3;color:var(--color-text-primary);margin-bottom:12px">${escHtml(paper.title)}</h1>
+        <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:6px">${escHtml(authors)}</div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          ${paper.year ? `<span style="font-size:12px;color:var(--color-text-tertiary)">${paper.year}</span>` : ''}
+          ${paper.citations ? `<span style="font-size:12px;color:var(--color-text-tertiary)">${paper.citations.toLocaleString()} citations</span>` : ''}
+          ${doiLink}${oaLink}
+        </div>
+      </div>
+      ${paper.abstract ? `
+        <div style="margin-bottom:24px">
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--color-text-tertiary);margin-bottom:10px">Abstract</div>
+          <div id="abstract-text" style="font-size:14px;line-height:1.8;color:var(--color-text-primary)">${escHtml(paper.abstract)}</div>
+        </div>
+      ` : '<div style="color:var(--color-text-tertiary);font-size:13px;font-style:italic">No abstract available.</div>'}
+      <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--color-border-subtle);display:flex;gap:8px;align-items:center">
+        <span style="font-size:11px;color:var(--color-text-tertiary)">Have the full PDF?</span>
+        ${uploadBtn}
+      </div>
+    `;
+
+    // Annotation overlay
+    const annotOverlay = document.createElement('div');
+    annotOverlay.className = 'annotation-overlay';
+    annotOverlay.dataset.page = pageNum;
+    wrapper.appendChild(annotOverlay);
+
+    container.appendChild(wrapper);
+    _pageWrappers[pageNum] = wrapper;
+
+    // Text selection → annotation card (same as PDF flow)
+    wrapper.addEventListener('mouseup', e => handleTextSelection(e, pageNum, wrapper));
+
+    // Render any saved annotations
+    renderAllAnnotations(paper.id);
+
+    // Upload handler
+    const inlineUpload = document.getElementById('inline-upload');
+    if (inlineUpload) {
+      inlineUpload.addEventListener('change', async () => {
+        const f = inlineUpload.files[0];
+        if (!f) return;
+        const buf = await f.arrayBuffer();
+        await State.storePDF(paper.id, buf);
+        State.updatePaper(paper.id, { pdfStorageKey: paper.id });
+        container.innerHTML = '';
+        _pageWrappers = {};
+        openPaper(paper.id);
+      });
+    }
   }
 
   async function renderPage(pageNum, container) {
