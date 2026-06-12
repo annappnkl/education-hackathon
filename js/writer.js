@@ -35,6 +35,22 @@ const Writer = (() => {
       updateWordCount();
     });
 
+    // Backspace/Delete anywhere inside a suggested block removes the whole block
+    doc.addEventListener('keydown', e => {
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const node = sel.anchorNode;
+      const block = node?.nodeType === 3 ? node.parentElement : node;
+      const suggestedBlock = block?.closest('[data-suggested-keywords],[data-suggested-title]');
+      if (suggestedBlock) {
+        e.preventDefault();
+        suggestedBlock.remove();
+        State.saveWritingContent(doc.innerHTML);
+        updateWordCount();
+      }
+    });
+
     updateWordCount();
   }
 
