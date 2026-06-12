@@ -1084,6 +1084,35 @@ h5 { font-size: var(--font-size-base); }
   letter-spacing: 0.05em;
 }
 
+/* ── Sidebar sections (Full PDF vs Unexplored) ── */
+.sidebar-section {
+  margin-bottom: var(--space-1);
+}
+
+.sidebar-section__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: var(--space-3) var(--space-3) var(--space-1);
+  margin-top: var(--space-2);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.sidebar-section:first-child .sidebar-section__label {
+  margin-top: 0;
+  border-top: none;
+}
+
+.sidebar-section__label--muted {
+  color: var(--color-text-tertiary);
+  opacity: 0.75;
+}
+
 .sidebar-paper {
   display: flex;
   align-items: flex-start;

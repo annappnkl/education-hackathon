@@ -18,8 +18,8 @@ const Reader = (() => {
 
   // ── Sidebar ──────────────────────────────────
   function renderSidebar() {
-    const list    = document.getElementById('sidebar-paper-list');
-    const papers  = State.getPapers();
+    const list   = document.getElementById('sidebar-paper-list');
+    const papers = State.getPapers();
     list.innerHTML = '';
 
     if (!papers.length) {
@@ -29,33 +29,31 @@ const Reader = (() => {
       return;
     }
 
-    // Group by discovery batch
-    const batches = {};
-    papers.forEach(p => {
-      const b = p.discoveryBatch || 1;
-      if (!batches[b]) batches[b] = [];
-      batches[b].push(p);
-    });
+    // Split into "has full PDF" vs "abstract / unexplored"
+    const withPDF    = papers.filter(p => !!p.pdfStorageKey);
+    const withoutPDF = papers.filter(p => !p.pdfStorageKey);
 
-    Object.keys(batches).sort((a, b) => a - b).forEach(batch => {
-      const group = document.createElement('div');
-      group.className = 'batch-group';
-      const label = document.createElement('div');
-      label.className = 'batch-group__label';
-      label.textContent = batches[batch][0].source === 'upload' && Object.keys(batches).length === 1
-        ? 'Uploaded' : `Session ${batch}`;
-      group.appendChild(label);
+    const byYear = arr => arr.slice().sort((a, b) => (b.year || 0) - (a.year || 0));
 
-      // Sort chronologically within batch (newest first)
-      batches[batch]
-        .slice()
-        .sort((a, b) => (b.year || 0) - (a.year || 0))
-        .forEach(paper => {
-          group.appendChild(buildSidebarItem(paper));
-        });
+    if (withPDF.length) {
+      const section = document.createElement('div');
+      section.className = 'sidebar-section';
+      section.innerHTML = `<div class="sidebar-section__label">
+        <span class="icon icon--sm" style="font-size:13px">menu_book</span>Full Reading Material
+      </div>`;
+      byYear(withPDF).forEach(p => section.appendChild(buildSidebarItem(p)));
+      list.appendChild(section);
+    }
 
-      list.appendChild(group);
-    });
+    if (withoutPDF.length) {
+      const section = document.createElement('div');
+      section.className = 'sidebar-section';
+      section.innerHTML = `<div class="sidebar-section__label sidebar-section__label--muted">
+        <span class="icon icon--sm" style="font-size:13px">explore</span>Unexplored
+      </div>`;
+      byYear(withoutPDF).forEach(p => section.appendChild(buildSidebarItem(p)));
+      list.appendChild(section);
+    }
   }
 
   function buildSidebarItem(paper) {
@@ -102,7 +100,14 @@ const Reader = (() => {
     let pdfData = await State.getPDF(paper.pdfStorageKey || paper.id);
     if (!pdfData && paper.openAccessUrl) {
       pdfData = await fetchPDFBuffer(paper.openAccessUrl);
-      if (pdfData) await State.storePDF(paper.id, pdfData);
+      if (pdfData) {
+        await State.storePDF(paper.id, pdfData);
+        // Mark paper as having a stored PDF so it moves to "Full Reading Material"
+        if (!paper.pdfStorageKey) {
+          State.updatePaper(paper.id, { pdfStorageKey: paper.id });
+          renderSidebar();
+        }
+      }
     }
 
     if (!pdfData) {
