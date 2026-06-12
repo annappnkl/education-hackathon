@@ -564,6 +564,31 @@ const Reader = (() => {
     document.body.appendChild(card);
     _annotationCard = card;
 
+    // Show a temporary selection highlight so the user sees what they're annotating
+    if (type === 'text' && normRect) {
+      const wrapper = _pageWrappers[pageNum];
+      const overlay = wrapper?.querySelector('.annotation-overlay');
+      if (overlay) {
+        const w = wrapper.offsetWidth;
+        const h = wrapper.offsetHeight;
+        const tmp = document.createElement('div');
+        tmp.id = 'temp-selection-highlight';
+        tmp.style.cssText = `
+          position:absolute;
+          left:${normRect.x * w}px;
+          top:${normRect.y * h}px;
+          width:${normRect.width * w}px;
+          height:${normRect.height * h}px;
+          background:rgba(99,102,241,0.22);
+          border:2px dashed rgba(99,102,241,0.7);
+          border-radius:2px;
+          pointer-events:none;
+          z-index:5;
+        `;
+        overlay.appendChild(tmp);
+      }
+    }
+
     let selectedTagId = null;
 
     // Tag selection
@@ -651,6 +676,7 @@ const Reader = (() => {
 
   function closeAnnotationCard() {
     if (_annotationCard) { _annotationCard.remove(); _annotationCard = null; }
+    document.getElementById('temp-selection-highlight')?.remove();
   }
 
   // ── Annotations panel (right side) ───────────
