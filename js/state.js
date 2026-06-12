@@ -57,6 +57,11 @@ const State = (() => {
 
   function save() {
     try {
+      // Keep allProjects entry in sync with current project (full data)
+      if (_state.project && _state.allProjects) {
+        const idx = _state.allProjects.findIndex(p => p.id === _state.project.id);
+        if (idx !== -1) _state.allProjects[idx] = _state.project;
+      }
       localStorage.setItem('rs_state', JSON.stringify(_state));
     } catch(e) {
       console.warn('State save failed', e);
@@ -92,12 +97,7 @@ const State = (() => {
     };
     _state.project = project;
     if (!_state.allProjects) _state.allProjects = [];
-    _state.allProjects.push({
-      id: project.id,
-      type: project.type,
-      topic: project.topic,
-      createdAt: project.createdAt,
-    });
+    _state.allProjects.push(project); // store full project, not just metadata
     save();
     return project;
   }
@@ -109,12 +109,32 @@ const State = (() => {
   }
 
   function switchProject(id) {
-    // Projects are stored inline in allProjects as metadata only.
-    // Full project data is in _state.project (only current supported in v1).
-    // For multi-project, we'd need full objects — for now just set current if it matches.
     if (_state.project?.id === id) return;
-    // Can't restore old projects yet without full storage — show a notice in the future
-    console.warn('Full multi-project restore not yet implemented');
+    const found = (_state.allProjects || []).find(p => p.id === id);
+    if (!found) return;
+    if (found.papers) {
+      // Full project data available — restore it
+      _state.project = found;
+    } else {
+      // Only metadata (legacy) — build a minimal shell
+      const presetTags = TAG_PRESETS[found.type] || TAG_PRESETS.other;
+      _state.project = {
+        ...found,
+        chatHistory: [],
+        papers: [],
+        customTags: [],
+        writingContent: '',
+        discoveryBatchCount: 0,
+        allTags: [...presetTags],
+      };
+    }
+    save();
+  }
+
+  function renameProject(newName) {
+    if (!_state.project || !newName.trim()) return;
+    _state.project.topic = newName.trim();
+    save(); // save() syncs into allProjects automatically
   }
 
   function addChatMessage(role, content) {
@@ -265,7 +285,7 @@ const State = (() => {
 
   return {
     get, setScreen, setWorkspaceMode,
-    createProject, getProject, getAllProjects, switchProject,
+    createProject, getProject, getAllProjects, switchProject, renameProject,
     addChatMessage,
     addPapers, getPapers, updatePaper,
     getAllTags, addCustomTag, getTagById,

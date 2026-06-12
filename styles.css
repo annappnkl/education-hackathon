@@ -1967,6 +1967,84 @@ h5 { font-size: var(--font-size-base); }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-text-tertiary); }
 
+/* ── Project preview panel (home screen) ─────── */
+.project-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  min-height: 100vh;
+  margin-left: 220px;
+  overflow: hidden;
+}
+
+.project-preview__header {
+  padding: var(--space-12) var(--space-10) var(--space-6);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.project-preview__type {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-xs);
+  padding: 2px 7px;
+  margin-bottom: var(--space-3);
+}
+
+.project-preview__name {
+  font-size: 22px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  line-height: 1.3;
+  margin-bottom: var(--space-2);
+}
+
+.project-preview__meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.project-preview__history {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.project-preview__footer {
+  padding: var(--space-6) var(--space-10);
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--color-surface);
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+/* Inline project rename in workspace topbar */
+.workspace-name-input {
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--color-primary);
+  outline: none;
+  padding: 0 2px;
+  min-width: 120px;
+  max-width: 400px;
+  font-family: var(--font-family);
+}
+
 /* ── Reader annotations panel ────────────────── */
 .reader__annots {
   width: 240px;

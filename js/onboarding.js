@@ -249,12 +249,52 @@ const Onboarding = (() => {
         <div class="project-list-item__topic">${escHtml(proj.topic.slice(0, 60))}${proj.topic.length > 60 ? '…' : ''}</div>
         <div class="project-list-item__date">${formatDate(proj.createdAt)}</div>
       `;
-      item.addEventListener('click', () => openProject(proj.id));
+      item.addEventListener('click', () => showProjectPreview(proj));
       list.appendChild(item);
     });
   }
 
-  function openProject(id) {
+  function showProjectPreview(proj) {
+    // Mark sidebar item active
+    document.querySelectorAll('.project-list-item').forEach(el => el.classList.remove('active'));
+    const allProjs = State.getAllProjects();
+    const idx = [...allProjs].reverse().findIndex(p => p.id === proj.id);
+    document.querySelectorAll('.project-list-item')[idx]?.classList.add('active');
+
+    // Switch to preview panel
+    document.getElementById('project-preview').style.display = 'flex';
+    document.querySelector('.onboarding').style.display = 'none';
+
+    // Header
+    document.getElementById('preview-type').textContent = proj.type;
+    document.getElementById('preview-name').textContent = proj.topic;
+    const paperCount = proj.papers?.length || 0;
+    const annotCount = (proj.papers || []).reduce((n, p) => n + (p.annotations?.length || 0), 0);
+    document.getElementById('preview-meta').textContent =
+      `${formatDate(proj.createdAt)}  ·  ${paperCount} paper${paperCount !== 1 ? 's' : ''}  ·  ${annotCount} annotation${annotCount !== 1 ? 's' : ''}`;
+
+    // Chat history
+    const historyEl = document.getElementById('preview-history');
+    historyEl.innerHTML = '';
+    const history = proj.chatHistory || [];
+    const visible = history.filter(m => m.role !== 'system');
+    if (visible.length) {
+      visible.forEach(m => {
+        const div = document.createElement('div');
+        div.className = `chat-bubble chat-bubble--${m.role}`;
+        div.textContent = m.content;
+        historyEl.appendChild(div);
+      });
+    } else {
+      historyEl.innerHTML = `<div style="color:var(--color-text-tertiary);font-size:var(--font-size-sm);font-style:italic">No conversation history available.</div>`;
+    }
+
+    // Enter button
+    const enterBtn = document.getElementById('preview-enter-btn');
+    enterBtn.onclick = () => enterProject(proj.id);
+  }
+
+  function enterProject(id) {
     State.switchProject(id);
     const project = State.getProject();
     if (!project) return;
@@ -270,8 +310,12 @@ const Onboarding = (() => {
   function newProject() {
     selectedType = null;
     document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('selected'));
+    // Show chat, hide preview
+    document.getElementById('project-preview').style.display = 'none';
+    document.querySelector('.onboarding').style.display = '';
     startChat(null);
     App.showScreen('onboarding');
+    document.querySelectorAll('.project-list-item').forEach(el => el.classList.remove('active'));
   }
 
   function formatDate(iso) {

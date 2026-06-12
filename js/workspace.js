@@ -10,9 +10,12 @@ const Workspace = (() => {
     const project = State.getProject();
     if (!project) return;
 
-    // Project name in top bar
-    document.getElementById('workspace-project-name').textContent =
-      truncate(project.topic, 48) || 'Research Project';
+    // Project name in top bar — click to rename
+    const nameEl = document.getElementById('workspace-project-name');
+    nameEl.textContent = truncate(project.topic, 48) || 'Research Project';
+    nameEl.title = 'Click to rename project';
+    nameEl.style.cursor = 'pointer';
+    nameEl.onclick = () => startInlineRename(nameEl);
 
     // Mode tabs
     document.querySelectorAll('.mode-tab').forEach(tab => {
@@ -66,6 +69,35 @@ const Workspace = (() => {
     if (mode === 'reading') {
       Reader.renderSidebar();
     }
+  }
+
+  function startInlineRename(nameEl) {
+    const current = State.getProject()?.topic || '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'workspace-name-input';
+    input.value = current;
+
+    nameEl.textContent = '';
+    nameEl.style.cursor = 'default';
+    nameEl.onclick = null;
+    nameEl.appendChild(input);
+    input.select();
+
+    const save = () => {
+      const newName = input.value.trim() || current;
+      State.renameProject(newName);
+      nameEl.textContent = truncate(newName, 48);
+      nameEl.style.cursor = 'pointer';
+      nameEl.onclick = () => startInlineRename(nameEl);
+      Onboarding.renderProjectsSidebar();
+    };
+
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
   }
 
   function truncate(str, n) {
