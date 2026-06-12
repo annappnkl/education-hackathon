@@ -36,14 +36,15 @@ const Discovery = (() => {
     list.appendChild(loading);
 
     try {
-      const results = await API.searchPapers(_query, { limit: 20, offset: _offset });
+      const raw     = await API.searchPapers(_query, { limit: 20, offset: _offset });
+      const results = raw.filter(p => !!p.openAccessUrl);  // only papers with a full PDF
       loading.remove();
 
       if (!results.length && !append) {
         list.innerHTML = `
           <div class="empty-state">
-            <span class="icon">search_off</span>
-            <p>No papers found for "${escHtml(_query)}". Try rephrasing your topic.</p>
+            <span class="icon">picture_as_pdf</span>
+            <p>No papers with a full PDF found for "${escHtml(_query)}".<br><span style="font-size:11px;color:var(--color-text-tertiary)">Try rephrasing, or arXiv papers always have PDFs.</span></p>
           </div>`;
         return;
       }
@@ -75,7 +76,6 @@ const Discovery = (() => {
     const authors = paper.authors.slice(0, 3).join(', ') + (paper.authors.length > 3 ? ' et al.' : '');
     const year    = paper.year || '—';
     const cites   = paper.citations?.toLocaleString() ?? '—';
-    const hasOA   = !!paper.openAccessUrl;
     const sourceLabel = { openalex: 'OpenAlex', arxiv: 'arXiv', crossref: 'CrossRef', core: 'CORE', europepmc: 'Europe PMC', upload: 'Uploaded' }[paper.source] || paper.source;
 
     card.innerHTML = `
@@ -95,18 +95,12 @@ const Discovery = (() => {
             <span class="icon">format_quote</span>${cites} citations
           </span>
           <span class="badge badge--neutral" style="margin-left:auto">${escHtml(sourceLabel)}</span>
-          ${hasOA ? `<span class="badge badge--primary">Open Access</span>` : ''}
+          <span class="badge badge--primary">Full PDF</span>
         </div>
         <div class="paper-card__abstract">${escHtml(paper.abstract || 'No abstract available.')}</div>
         ${paper.abstract && paper.abstract.length > 200 ? `
           <button class="paper-card__expand" data-expanded="false">Show more</button>
         ` : ''}
-        ${hasOA ? `
-          <div class="paper-card__oa">
-            <a href="${escHtml(paper.openAccessUrl)}" target="_blank" class="btn btn--ghost btn--sm" style="font-size:11px">
-              <span class="icon icon--sm">open_in_new</span>View PDF
-            </a>
-          </div>` : ''}
       </div>
     `;
 
