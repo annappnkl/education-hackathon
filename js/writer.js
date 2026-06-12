@@ -75,6 +75,7 @@ const Writer = (() => {
 
     document.getElementById('suggest-title-btn').addEventListener('click', suggestTitle);
     document.getElementById('suggest-keywords-btn').addEventListener('click', suggestKeywords);
+    document.getElementById('find-citation-btn').addEventListener('click', findCitation);
   }
 
   // ── LLM title suggestion ──────────────────────
@@ -213,6 +214,7 @@ Return ONLY a comma-separated list of keywords — no numbering, no explanation,
         index: i,
         tag: tag?.name || 'Unknown',
         tagId: a.tagId,
+        paperId: a.paperId,
         text: a.type === 'image' ? '[Image area]' : a.selectedText,
         comment: a.comment || '',
         paper: a.paperTitle,
@@ -317,7 +319,7 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
           if (ann.text === '[Image area]') {
             html += `<p style="background:var(--color-bg);border-left:3px solid ${color};padding:8px 12px;margin:6px 0;font-size:13px;color:var(--color-text-secondary)">[Image from ${escHtml(ann.paper)}, ${ann.year}]</p>`;
           } else {
-            html += `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;color:var(--color-text-primary);background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
+            html += `<blockquote data-paper-id="${ann.paperId || ''}" style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;color:var(--color-text-primary);background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
           }
 
           if (ann.comment) {
@@ -342,7 +344,7 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
     if (citTag) html += renderCitationSection(citTag);
 
     doc.innerHTML = html || '<p><br></p>';
-    State.saveWritingContent(doc.innerHTML);
+    numberCitations();
     updateWordCount();
   }
 
@@ -367,7 +369,7 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
       if (items.length) {
         items.sort((a, b) => (b.year || 0) - (a.year || 0)).forEach(ann => {
           if (ann.text !== '[Image area]') {
-            html += `<blockquote style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
+            html += `<blockquote data-paper-id="${ann.paperId || ''}" style="border-left:3px solid ${color};padding:8px 14px;margin:8px 0;font-style:italic;font-size:13px;background:var(--color-bg)">"${escHtml(ann.text)}"<br><span style="font-size:11px;color:var(--color-text-tertiary);font-style:normal">— ${escHtml(ann.paper)}, ${ann.year}</span></blockquote>`;
           }
           if (ann.comment) {
             html += `<p style="font-size:13px;color:var(--color-text-secondary);margin:2px 0 10px 17px;font-style:italic">${escHtml(ann.comment)}</p>`;
@@ -383,8 +385,149 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
     if (citTag) html += renderCitationSection(citTag);
 
     doc.innerHTML = html || '<p><br></p>';
-    State.saveWritingContent(doc.innerHTML);
+    numberCitations();
     updateWordCount();
+  }
+
+  // ── Inline citation numbering ─────────────────
+  function numberCitations() {
+    const doc = document.getElementById('editor-doc');
+
+    // Remove any previously stamped numbers
+    doc.querySelectorAll('.cit-num').forEach(el => el.remove());
+
+    // Build paperId → number map from blockquote order of appearance
+    const citMap = {};
+    let counter  = 1;
+    doc.querySelectorAll('blockquote[data-paper-id]').forEach(bq => {
+      const pid = bq.dataset.paperId;
+      if (pid && !citMap[pid]) citMap[pid] = counter++;
+    });
+
+    // Stamp [n] on each blockquote
+    doc.querySelectorAll('blockquote[data-paper-id]').forEach(bq => {
+      const num = citMap[bq.dataset.paperId];
+      if (!num) return;
+      const sup = document.createElement('sup');
+      sup.className = 'cit-num';
+      sup.textContent = `[${num}]`;
+      sup.style.cssText = 'color:var(--color-primary);font-size:10px;font-weight:700;margin-left:4px;user-select:none;cursor:default';
+      bq.appendChild(sup);
+    });
+
+    // Prefix citation-section paragraphs with [n]
+    doc.querySelectorAll('p[data-paper-id]').forEach(p => {
+      const num = citMap[p.dataset.paperId];
+      if (!num) return;
+      const sup = document.createElement('sup');
+      sup.className = 'cit-num';
+      sup.textContent = `[${num}] `;
+      sup.style.cssText = 'color:var(--color-primary);font-size:11px;font-weight:700;user-select:none;vertical-align:baseline;font-style:normal';
+      p.insertBefore(sup, p.firstChild);
+    });
+
+    State.saveWritingContent(doc.innerHTML);
+  }
+
+  // ── Find citation for selected text ──────────
+  async function findCitation() {
+    const doc = document.getElementById('editor-doc');
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !doc.contains(sel.anchorNode)) return;
+
+    const selectedText = sel.toString().trim();
+    if (!selectedText) return;
+
+    const btn    = document.getElementById('find-citation-btn');
+    const iconEl = btn.querySelector('.icon');
+    btn.disabled = true;
+    iconEl.textContent = 'hourglass_empty';
+
+    const papers  = State.getPapers();
+    const project = State.getProject();
+
+    try {
+      const reply = await API.chatLLM([
+        {
+          role: 'system',
+          content: `You are an academic writing assistant. Given a sentence or paragraph from a ${project?.type || 'paper'} and a list of available papers, identify which paper(s) best support that text.
+Return ONLY a JSON array of paper IDs — no prose, no markdown: ["id1","id2"]
+If nothing matches return [].`,
+        },
+        {
+          role: 'user',
+          content: `Text:\n"${selectedText}"\n\nPapers:\n${papers.map(p => `ID:${p.id}\nTitle:${p.title}\nAbstract:${(p.abstract||'').slice(0,250)}`).join('\n\n')}`,
+        },
+      ]);
+
+      const match = reply.match(/\[[\s\S]*?\]/);
+      if (!match) return;
+      const ids = JSON.parse(match[0]).filter(id => papers.find(p => p.id === id));
+      if (!ids.length) { alert('No matching papers found for that text.'); return; }
+
+      // Build current citation map and assign new numbers
+      const citMap  = {};
+      let counter   = 1;
+      doc.querySelectorAll('blockquote[data-paper-id]').forEach(bq => {
+        const pid = bq.dataset.paperId;
+        if (pid && !citMap[pid]) citMap[pid] = counter++;
+      });
+      doc.querySelectorAll('p[data-paper-id]').forEach(p => {
+        const pid = p.dataset.paperId;
+        if (pid && !citMap[pid]) citMap[pid] = counter++;
+      });
+      ids.forEach(id => { if (!citMap[id]) citMap[id] = counter++; });
+
+      // Insert [n] superscripts at end of selection
+      const range = sel.getRangeAt(0);
+      range.collapse(false);
+      ids.forEach(id => {
+        const sup = document.createElement('sup');
+        sup.className = 'cit-num';
+        sup.textContent = `[${citMap[id]}]`;
+        sup.style.cssText = 'color:var(--color-primary);font-size:10px;font-weight:700;margin-left:2px;cursor:default';
+        range.insertNode(sup);
+        range.setStartAfter(sup);
+        range.collapse(false);
+      });
+      sel.removeAllRanges();
+
+      // Add any new papers to the citation section if not already there
+      const tags   = State.getAllTags();
+      const citTag = tags.find(t => t.id === 'citation');
+      if (citTag) {
+        ids.forEach(id => {
+          if (doc.querySelector(`p[data-paper-id="${id}"]`)) return; // already listed
+          const paper = papers.find(p => p.id === id);
+          if (!paper) return;
+          // Find the Citation heading and append after it
+          const citHeading = [...doc.querySelectorAll('h2')].find(h => h.textContent.trim() === citTag.name);
+          const p = document.createElement('p');
+          p.dataset.paperId = id;
+          p.style.cssText = 'font-size:12.5px;color:var(--color-text-primary);margin:4px 0;line-height:1.7;padding-left:2em;text-indent:-2em';
+          const numSup = document.createElement('sup');
+          numSup.className = 'cit-num';
+          numSup.textContent = `[${citMap[id]}] `;
+          numSup.style.cssText = 'color:var(--color-primary);font-size:11px;font-weight:700';
+          p.appendChild(numSup);
+          p.appendChild(document.createTextNode(formatAPA(paper)));
+          if (citHeading) {
+            citHeading.after(p);
+          } else {
+            doc.appendChild(p);
+          }
+        });
+      }
+
+      State.saveWritingContent(doc.innerHTML);
+      updateWordCount();
+
+    } catch (err) {
+      console.error('Find citation failed:', err);
+    }
+
+    btn.disabled = false;
+    iconEl.textContent = 'format_quote';
   }
 
   // ── Refs panel ────────────────────────────────
@@ -584,7 +727,7 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
 
     sorted.forEach(paper => {
       const apa = formatAPA(paper);
-      html += `<p style="font-size:12.5px;color:var(--color-text-primary);margin:4px 0;line-height:1.7;padding-left:2em;text-indent:-2em">${escHtml(apa)}</p>`;
+      html += `<p data-paper-id="${paper.id}" style="font-size:12.5px;color:var(--color-text-primary);margin:4px 0;line-height:1.7;padding-left:2em;text-indent:-2em">${escHtml(apa)}</p>`;
     });
 
     html += `<p style="min-height:0.8em"><br></p>`;
