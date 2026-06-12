@@ -19,9 +19,10 @@ const Workspace = (() => {
       tab.addEventListener('click', () => switchMode(tab.dataset.mode));
     });
 
-    // Back → discovery
+    // Back → project overview (onboarding with projects sidebar)
     document.getElementById('workspace-back').addEventListener('click', () => {
-      App.showScreen('discovery');
+      App.showScreen('onboarding');
+      Onboarding.renderProjectsSidebar();
     });
 
     // Add papers (re-trigger discovery)

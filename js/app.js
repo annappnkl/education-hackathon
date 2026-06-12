@@ -24,11 +24,9 @@ const App = (() => {
     if (state.project && state.currentScreen === 'workspace') {
       showScreen('workspace');
       Workspace.init();
-    } else if (state.project && state.currentScreen === 'discovery') {
-      // Re-show discovery with existing papers
-      showScreen('discovery');
-      Discovery.init();
     } else {
+      // Onboarding is the home — covers new sessions, returning from workspace,
+      // and the stale 'discovery' screen state (don't re-enter discovery on load)
       showScreen('onboarding');
     }
   }
