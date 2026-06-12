@@ -14,6 +14,19 @@
 
   <!-- ── SCREEN 1: Onboarding ── -->
   <div id="screen-onboarding" class="screen active">
+    <div class="onboarding-shell">
+
+      <!-- Projects sidebar -->
+      <div class="projects-sidebar">
+        <div class="projects-sidebar__header">
+          <span class="projects-sidebar__title">Projects</span>
+          <button class="btn btn--icon btn--ghost btn--sm" onclick="Onboarding.newProject()" title="New project">
+            <span class="icon icon--sm">add</span>
+          </button>
+        </div>
+        <div class="projects-sidebar__list" id="projects-list"></div>
+      </div>
+
     <div class="onboarding">
       <div class="onboarding__header">
         <div class="onboarding__title">Research Studio</div>
@@ -48,7 +61,8 @@
 
       <!-- Hidden file input -->
       <input type="file" id="file-input" accept=".pdf" multiple style="display:none" />
-    </div>
+    </div><!-- end .onboarding -->
+    </div><!-- end .onboarding-shell -->
   </div>
 
   <!-- ── SCREEN 2: Paper Discovery ── -->

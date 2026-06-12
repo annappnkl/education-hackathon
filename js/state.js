@@ -41,6 +41,7 @@ const State = (() => {
     currentScreen: 'onboarding',
     workspaceMode: 'reading',
     project: null,
+    allProjects: [],
   };
 
   let _state = loadFromStorage();
@@ -74,25 +75,47 @@ const State = (() => {
     save();
   }
 
-  function createProject({ type, topic }) {
+  function createProject({ type, topic, searchQuery }) {
     const presetTags = TAG_PRESETS[type] || TAG_PRESETS.other;
-    _state.project = {
+    const project = {
       id: uid(),
       type,
       topic,
+      searchQuery: searchQuery || topic.slice(0, 60),
       createdAt: new Date().toISOString(),
       chatHistory: [],
       papers: [],
       customTags: [],
       writingContent: '',
       discoveryBatchCount: 0,
+      allTags: [...presetTags],
     };
-    _state.project.allTags = [...presetTags];
+    _state.project = project;
+    if (!_state.allProjects) _state.allProjects = [];
+    _state.allProjects.push({
+      id: project.id,
+      type: project.type,
+      topic: project.topic,
+      createdAt: project.createdAt,
+    });
     save();
-    return _state.project;
+    return project;
   }
 
   function getProject() { return _state.project; }
+
+  function getAllProjects() {
+    return _state.allProjects || [];
+  }
+
+  function switchProject(id) {
+    // Projects are stored inline in allProjects as metadata only.
+    // Full project data is in _state.project (only current supported in v1).
+    // For multi-project, we'd need full objects — for now just set current if it matches.
+    if (_state.project?.id === id) return;
+    // Can't restore old projects yet without full storage — show a notice in the future
+    console.warn('Full multi-project restore not yet implemented');
+  }
 
   function addChatMessage(role, content) {
     if (!_state.project) return;

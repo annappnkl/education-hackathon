@@ -24,22 +24,26 @@ const Discovery = (() => {
   }
 
   async function fetchAndRender(append) {
-    const loading = document.getElementById('discovery-loading');
-    const list    = document.getElementById('discovery-list');
+    const list = document.getElementById('discovery-list');
 
+    // Always create a fresh loading indicator (avoids null ref on re-use)
+    const loading = document.createElement('div');
+    loading.className = 'empty-state';
     loading.style.display = 'flex';
+    loading.innerHTML = `<div class="loading-spinner"></div><p>Searching Semantic Scholar…</p>`;
+
     if (!append) list.innerHTML = '';
     list.appendChild(loading);
 
     try {
       const results = await API.searchPapers(_query, { limit: 20, offset: _offset });
-      loading.style.display = 'none';
+      loading.remove();
 
       if (!results.length && !append) {
         list.innerHTML = `
           <div class="empty-state">
             <span class="icon">search_off</span>
-            <p>No papers found. Try a different search term.</p>
+            <p>No papers found for "${escHtml(_query)}". Try rephrasing your topic.</p>
           </div>`;
         return;
       }
@@ -53,11 +57,12 @@ const Discovery = (() => {
 
       updateImportButton();
     } catch(err) {
-      loading.style.display = 'none';
+      loading.remove();
+      console.error('Semantic Scholar error:', err);
       list.innerHTML = `
         <div class="empty-state">
           <span class="icon">wifi_off</span>
-          <p>Could not reach Semantic Scholar. Check your connection.</p>
+          <p>Could not reach Semantic Scholar.<br><span style="font-size:11px;color:var(--color-text-tertiary)">${escHtml(err.message)}</span></p>
         </div>`;
     }
   }
