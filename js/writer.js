@@ -95,7 +95,10 @@ const Writer = (() => {
     const project = State.getProject();
     const allTags = State.getAllTags();
 
-    const sectionList = allTags.map(t => `  - tagId="${t.id}", name="${t.name}"`).join('\n');
+    // Citation section is always auto-generated — exclude from LLM prompt
+    const sectionList = allTags
+      .filter(t => t.id !== 'citation')
+      .map(t => `  - tagId="${t.id}", name="${t.name}"`).join('\n');
 
     const systemPrompt = `You are a research writing assistant helping a student write a ${project?.type || 'research paper'}.
 The student has annotated excerpts from academic papers. Each annotation has a tag the student assigned, but you should use your judgement to place it in the best section.
@@ -199,12 +202,16 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
       });
     });
 
-    // Append empty sections for tags not yet annotated (preserve thesis structure)
+    // Append empty sections for tags not yet annotated (skip citation — auto-generated below)
     tags.forEach(tag => {
-      if (renderedTagIds.has(tag.id)) return;
+      if (renderedTagIds.has(tag.id) || tag.id === 'citation') return;
       html += `<h2 style="color:${tag.color};margin-top:2em;margin-bottom:0.4em;font-size:20px">${escHtml(tag.name)}</h2>`;
       html += `<p style="min-height:1.5em;color:var(--color-text-tertiary);font-size:13px" data-placeholder="No excerpts tagged yet — write here or tag annotations in Reading mode"><br></p>`;
     });
+
+    // Always append auto-generated reference list in the Citation section
+    const citTag = tags.find(t => t.id === 'citation');
+    if (citTag) html += renderCitationSection(citTag);
 
     doc.innerHTML = html || '<p><br></p>';
     State.saveWritingContent(doc.innerHTML);
@@ -221,8 +228,9 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
     });
 
     let html = '';
-    // Render all tags in preset order — populated or empty
+    // Render all tags in preset order — skip citation (auto-generated below)
     tags.forEach(tag => {
+      if (tag.id === 'citation') return;
       const color = tag?.color || '#2A5C45';
       const items = byTag[tag.id] || [];
 
@@ -241,6 +249,10 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
 
       html += `<p style="min-height:1.5em;color:var(--color-text-tertiary);font-size:13px"><br></p>`;
     });
+
+    // Auto-generated reference list
+    const citTag = tags.find(t => t.id === 'citation');
+    if (citTag) html += renderCitationSection(citTag);
 
     doc.innerHTML = html || '<p><br></p>';
     State.saveWritingContent(doc.innerHTML);
@@ -368,6 +380,77 @@ ${annotList.map(a => `[${a.index}] TAG="${a.tag}" (tagId="${a.tagId}") PAPER="${
 
     State.saveWritingContent(doc.innerHTML);
     updateWordCount();
+  }
+
+  // ── Auto-generated APA reference list ────────
+  function renderCitationSection(tag) {
+    const color = tag.color || '#6B7280';
+    let html = `<h2 style="color:${color};margin-top:2em;margin-bottom:0.8em;font-size:20px">${escHtml(tag.name)}</h2>`;
+
+    // All papers that have at least one annotation = papers being cited
+    const annotations   = State.getAllAnnotations();
+    const citedPaperIds = new Set(annotations.map(a => a.paperId));
+    const cited         = State.getPapers().filter(p => citedPaperIds.has(p.id));
+
+    if (!cited.length) {
+      html += `<p style="min-height:1.5em;color:var(--color-text-tertiary);font-size:13px" data-placeholder="Citations will appear here once you annotate papers"><br></p>`;
+      return html;
+    }
+
+    // Sort by first-author surname then year (standard APA order)
+    const sorted = [...cited].sort((a, b) => {
+      const sA = getLastName(a.authors?.[0] || '');
+      const sB = getLastName(b.authors?.[0] || '');
+      return sA.localeCompare(sB) || (a.year || 9999) - (b.year || 9999);
+    });
+
+    sorted.forEach(paper => {
+      const apa = formatAPA(paper);
+      html += `<p style="font-size:12.5px;color:var(--color-text-primary);margin:4px 0;line-height:1.7;padding-left:2em;text-indent:-2em">${escHtml(apa)}</p>`;
+    });
+
+    html += `<p style="min-height:0.8em"><br></p>`;
+    return html;
+  }
+
+  // APA 7th edition: Surname, I. I., & Surname, I. I. (year). Title. https://doi.org/...
+  function formatAPA(paper) {
+    const authors = paper.authors || [];
+    let authorStr;
+
+    if (!authors.length) {
+      authorStr = 'Unknown Author';
+    } else {
+      const formatted = authors.slice(0, 6).map(name => {
+        const parts = (name || '').trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        const surname  = parts[parts.length - 1];
+        const initials = parts.slice(0, -1).map(p => p[0].toUpperCase() + '.').join(' ');
+        return `${surname}, ${initials}`;
+      });
+      if (authors.length > 6) {
+        authorStr = formatted.join(', ') + ', … ' + (() => {
+          const last  = authors[authors.length - 1].trim().split(/\s+/);
+          const surn  = last[last.length - 1];
+          const inits = last.slice(0, -1).map(p => p[0].toUpperCase() + '.').join(' ');
+          return `${surn}, ${inits}`;
+        })();
+      } else if (formatted.length === 1) {
+        authorStr = formatted[0];
+      } else {
+        authorStr = formatted.slice(0, -1).join(', ') + ', & ' + formatted[formatted.length - 1];
+      }
+    }
+
+    const year  = paper.year ? `(${paper.year})` : '(n.d.)';
+    const title = paper.title || 'Untitled';
+    const doi   = paper.doi ? ` https://doi.org/${paper.doi}` : '';
+    return `${authorStr} ${year}. ${title}.${doi}`;
+  }
+
+  function getLastName(fullName) {
+    const parts = (fullName || '').trim().split(/\s+/);
+    return parts[parts.length - 1] || '';
   }
 
   function truncate(str, n) {

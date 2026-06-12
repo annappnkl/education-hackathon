@@ -1509,6 +1509,25 @@ h5 { font-size: var(--font-size-base); }
   min-width: 100px;
 }
 
+/* Contextual connections loading badge — top-center */
+.graph-context-loading {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* Zoom controls — bottom-right */
 .graph-zoom-controls {
   position: absolute;
