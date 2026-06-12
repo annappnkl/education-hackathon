@@ -593,11 +593,11 @@ h5 { font-size: var(--font-size-base); }
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  min-height: 100vh;
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
-  align-self: flex-start;
   height: 100vh;
+  z-index: 20;
 }
 
 .projects-sidebar__header {
@@ -667,6 +667,7 @@ h5 { font-size: var(--font-size-base); }
   padding: var(--space-6);
   background: var(--color-bg);
   min-height: 100vh;
+  margin-left: 220px; /* fixed sidebar width */
 }
 
 .onboarding__header {
