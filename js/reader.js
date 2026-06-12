@@ -63,11 +63,15 @@ const Reader = (() => {
     if (paper.id === _currentPaperId) item.classList.add('active');
 
     const annotCount = (paper.annotations || []).length;
+    const hasOA = !!paper.openAccessUrl;
     item.innerHTML = `
       <div class="sidebar-paper__dot"></div>
-      <div>
+      <div style="min-width:0;flex:1">
         <div class="sidebar-paper__title">${escHtml(paper.title)}</div>
-        <div class="sidebar-paper__year">${paper.year || '—'}${annotCount ? ` · ${annotCount} annotation${annotCount > 1 ? 's' : ''}` : ''}</div>
+        <div class="sidebar-paper__year" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          ${paper.year || '—'}${annotCount ? ` · ${annotCount} annotation${annotCount > 1 ? 's' : ''}` : ''}
+          ${hasOA ? `<span class="sidebar-oa-badge">PDF</span>` : ''}
+        </div>
       </div>
     `;
     item.addEventListener('click', () => openPaper(paper.id));
