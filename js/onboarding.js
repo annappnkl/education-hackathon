@@ -289,7 +289,8 @@ const Onboarding = (() => {
 
     // Header
     document.getElementById('preview-type').textContent = proj.type;
-    document.getElementById('preview-name').textContent = proj.topic;
+    const shortName = proj.topic.length > 60 ? proj.topic.slice(0, 60) + '…' : proj.topic;
+    document.getElementById('preview-name').textContent = shortName;
     const paperCount = proj.papers?.length || 0;
     const annotCount = (proj.papers || []).reduce((n, p) => n + (p.annotations?.length || 0), 0);
     document.getElementById('preview-meta').textContent =
