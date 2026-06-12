@@ -56,6 +56,59 @@ const Writer = (() => {
       }
       generateOutline({ silent: false });
     });
+
+    document.getElementById('suggest-title-btn').addEventListener('click', suggestTitle);
+  }
+
+  // ── LLM title suggestion ──────────────────────
+  async function suggestTitle() {
+    const btn = document.getElementById('suggest-title-btn');
+    const doc = document.getElementById('editor-doc');
+    const text = doc.innerText.trim();
+
+    if (!text) return;
+
+    btn.disabled = true;
+    const iconEl = btn.querySelector('.icon');
+    iconEl.textContent = 'hourglass_empty';
+
+    const project = State.getProject();
+
+    try {
+      const reply = await API.chatLLM([
+        {
+          role: 'system',
+          content: `You are an academic writing assistant. Given the content of a ${project?.type || 'research paper'}, suggest a single concise, compelling academic thesis title.
+Return ONLY the title text — no quotes, no explanation, no punctuation at the end unless it's a colon for a subtitle.`,
+        },
+        {
+          role: 'user',
+          content: `Project topic: ${project?.topic || 'unknown'}\n\nDocument content:\n${text.slice(0, 3000)}`,
+        },
+      ]);
+
+      const title = reply.trim().replace(/^["']|["']$/g, '');
+      if (!title) return;
+
+      // Remove any existing title block at the top
+      const existing = doc.querySelector('h1[data-suggested-title]');
+      if (existing) existing.remove();
+
+      // Insert at the very top
+      const titleEl = document.createElement('h1');
+      titleEl.dataset.suggestedTitle = '1';
+      titleEl.style.cssText = 'font-size:24px;font-weight:700;color:var(--color-text-primary);margin-bottom:1.2em;line-height:1.3;border-bottom:2px solid var(--color-primary-light);padding-bottom:0.4em';
+      titleEl.textContent = title;
+      doc.insertBefore(titleEl, doc.firstChild);
+
+      State.saveWritingContent(doc.innerHTML);
+      updateWordCount();
+    } catch (err) {
+      console.error('Title suggestion failed:', err);
+    }
+
+    btn.disabled = false;
+    iconEl.textContent = 'title';
   }
 
   // ── LLM outline generation ────────────────────
