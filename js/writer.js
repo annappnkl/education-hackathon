@@ -58,6 +58,7 @@ const Writer = (() => {
     });
 
     document.getElementById('suggest-title-btn').addEventListener('click', suggestTitle);
+    document.getElementById('suggest-keywords-btn').addEventListener('click', suggestKeywords);
   }
 
   // ── LLM title suggestion ──────────────────────
@@ -109,6 +110,64 @@ Return ONLY the title text — no quotes, no explanation, no punctuation at the 
 
     btn.disabled = false;
     iconEl.textContent = 'title';
+  }
+
+  // ── LLM keyword suggestion ─────────────────────
+  async function suggestKeywords() {
+    const btn    = document.getElementById('suggest-keywords-btn');
+    const doc    = document.getElementById('editor-doc');
+    const text   = doc.innerText.trim();
+    if (!text) return;
+
+    btn.disabled = true;
+    const iconEl = btn.querySelector('.icon');
+    iconEl.textContent = 'hourglass_empty';
+
+    const project = State.getProject();
+
+    try {
+      const reply = await API.chatLLM([
+        {
+          role: 'system',
+          content: `You are an academic writing assistant. Given the content of a ${project?.type || 'research paper'}, extract 6–10 precise academic keywords suitable for a thesis keyword section.
+Return ONLY a comma-separated list of keywords — no numbering, no explanation, no extra text.`,
+        },
+        {
+          role: 'user',
+          content: `Project topic: ${project?.topic || 'unknown'}\n\nDocument content:\n${text.slice(0, 3000)}`,
+        },
+      ]);
+
+      const keywords = reply.trim().split(',').map(k => k.trim()).filter(Boolean);
+      if (!keywords.length) return;
+
+      // Remove any existing keywords block
+      doc.querySelector('div[data-suggested-keywords]')?.remove();
+
+      // Build keywords block — insert after title if present, otherwise at top
+      const kwBlock = document.createElement('div');
+      kwBlock.dataset.suggestedKeywords = '1';
+      kwBlock.style.cssText = 'margin-bottom:1.6em;padding:10px 14px;background:var(--color-surface-raised);border-radius:var(--radius-sm);border-left:3px solid var(--color-primary-light)';
+      kwBlock.innerHTML = `
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--color-text-tertiary);margin-right:10px">Keywords</span>
+        ${keywords.map(k => `<span style="display:inline-block;background:var(--color-primary-light);color:var(--color-primary);border-radius:var(--radius-pill);font-size:11px;font-weight:500;padding:2px 9px;margin:2px 3px 2px 0">${escHtml(k)}</span>`).join('')}
+      `;
+
+      const titleEl = doc.querySelector('h1[data-suggested-title]');
+      if (titleEl && titleEl.nextSibling) {
+        doc.insertBefore(kwBlock, titleEl.nextSibling);
+      } else {
+        doc.insertBefore(kwBlock, doc.firstChild);
+      }
+
+      State.saveWritingContent(doc.innerHTML);
+      updateWordCount();
+    } catch (err) {
+      console.error('Keyword suggestion failed:', err);
+    }
+
+    btn.disabled = false;
+    iconEl.textContent = 'label';
   }
 
   // ── LLM outline generation ────────────────────
