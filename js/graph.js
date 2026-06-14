@@ -179,7 +179,7 @@ const Graph = (() => {
           'height':                     10,
           // Label — always visible with pill background for readability
           'label':                      'data(label)',
-          'color':                      'rgba(255,255,255,0.85)',
+          'color':                      '#071C0E',
           'font-size':                  '10px',
           'font-family':                'Inter, sans-serif',
           'font-weight':                '400',
@@ -187,7 +187,7 @@ const Graph = (() => {
           'text-halign':                'center',
           'text-margin-y':              6,
           'text-wrap':                  'none',
-          'text-background-color':      'rgba(14,14,18,0.82)',
+          'text-background-color':      'rgba(255,255,255,0.88)',
           'text-background-opacity':    1,
           'text-background-padding':    '3px',
           'text-background-shape':      'roundrectangle',
@@ -213,11 +213,11 @@ const Graph = (() => {
       {
         selector: 'node.hovered',
         style: {
-          'color':                  'rgba(255,255,255,1)',
+          'color':                  '#071C0E',
           'font-weight':            '600',
-          'text-background-color':  'rgba(30,30,42,0.96)',
+          'text-background-color':  'rgba(255,255,255,0.96)',
           'border-width':           2,
-          'border-color':           'rgba(255,255,255,0.55)',
+          'border-color':           'rgba(0,208,99,0.7)',
         }
       },
       // Dimmed neighbors when something is hovered
@@ -231,8 +231,8 @@ const Graph = (() => {
         selector: 'node:selected',
         style: {
           'border-width': 2,
-          'border-color': 'rgba(255,255,255,0.9)',
-          'color':        'rgba(255,255,255,0.95)',
+          'border-color': 'rgba(0,208,99,0.9)',
+          'color':        '#071C0E',
         }
       },
 
@@ -264,7 +264,7 @@ const Graph = (() => {
         selector: 'edge[edgeType = "contextual"]',
         style: {
           'width':         0.8,
-          'line-color':    'rgba(255,255,255,0.14)',
+          'line-color':    'rgba(7,28,14,0.2)',
           'curve-style':   'haystack',
           'line-style':    'dashed',
           'line-dash-pattern': [5, 5],
@@ -274,7 +274,7 @@ const Graph = (() => {
       {
         selector: 'edge[edgeType = "contextual"].highlighted',
         style: {
-          'line-color': 'rgba(255,255,255,0.55)',
+          'line-color': 'rgba(7,28,14,0.5)',
           'width':      1.2,
         }
       },
@@ -327,7 +327,7 @@ const Graph = (() => {
           const otherId = edge.source().id() === d.id ? edge.target().id() : edge.source().id();
           const other   = State.getPapers().find(p => p.id === otherId);
           const reason  = edge.data('reason');
-          return other && reason ? `<div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:3px">↔ <em>${escHtml(truncate(other.title, 28))}</em>: ${escHtml(reason)}</div>` : null;
+          return other && reason ? `<div style="font-size:10px;color:#6A9478;margin-top:3px">↔ <em>${escHtml(truncate(other.title, 28))}</em>: ${escHtml(reason)}</div>` : null;
         })
         .filter(Boolean);
 
@@ -339,13 +339,13 @@ const Graph = (() => {
       ].filter(Boolean);
 
       tooltip.innerHTML = `
-        <div style="font-weight:500;font-size:12px;color:rgba(255,255,255,0.9);margin-bottom:3px;line-height:1.4">${escHtml(paper.title)}</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:5px">${paper.year || ''}${paper.authors?.length ? ' · ' + paper.authors.slice(0, 2).join(', ') : ''}</div>
+        <div style="font-weight:500;font-size:12px;color:#071C0E;margin-bottom:3px;line-height:1.4">${escHtml(paper.title)}</div>
+        <div style="font-size:10px;color:#6A9478;margin-bottom:5px">${paper.year || ''}${paper.authors?.length ? ' · ' + paper.authors.slice(0, 2).join(', ') : ''}</div>
         ${stars ? `<div style="margin-bottom:4px">${stars}</div>` : ''}
-        ${d.takeaway ? `<div style="margin-bottom:5px"><span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.35);margin-right:5px">My note</span><span style="font-size:10px;color:rgba(255,255,255,0.65);font-style:italic">"${escHtml(d.takeaway.slice(0, 90))}${d.takeaway.length > 90 ? '…' : ''}"</span></div>` : ''}
+        ${d.takeaway ? `<div style="margin-bottom:5px"><span style="font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#6A9478;margin-right:5px">My note</span><span style="font-size:10px;color:#1A3D2A;font-style:italic">"${escHtml(d.takeaway.slice(0, 90))}${d.takeaway.length > 90 ? '…' : ''}"</span></div>` : ''}
         ${tagChips ? `<div style="margin-bottom:5px">${tagChips}</div>` : ''}
         ${ctxReasons.join('')}
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:5px;border-top:1px solid rgba(255,255,255,0.08);padding-top:4px">${footerParts.join(' · ')}</div>
+        <div style="font-size:10px;color:#6A9478;margin-top:5px;border-top:1px solid rgba(7,28,14,0.1);padding-top:4px">${footerParts.join(' · ')}</div>
       `;
       tooltip.style.display = 'block';
     });
@@ -411,15 +411,15 @@ const Graph = (() => {
     // Edge type legend
     if (hasCited) {
       legend.innerHTML += `
-        <div style="display:flex;align-items:center;gap:7px;font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:5px">
+        <div style="display:flex;align-items:center;gap:7px;font-size:10px;color:#6A9478;margin-bottom:5px">
           <span style="display:inline-block;width:18px;height:1.5px;background:rgba(74,200,150,0.7);border-radius:1px;flex-shrink:0"></span>
           Cites
         </div>`;
     }
     if (hasContextual) {
       legend.innerHTML += `
-        <div style="display:flex;align-items:center;gap:7px;font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:5px">
-          <span style="display:inline-block;width:18px;height:0;border-top:1.5px dashed rgba(255,255,255,0.4);flex-shrink:0"></span>
+        <div style="display:flex;align-items:center;gap:7px;font-size:10px;color:#6A9478;margin-bottom:5px">
+          <span style="display:inline-block;width:18px;height:0;border-top:1.5px dashed rgba(7,28,14,0.3);flex-shrink:0"></span>
           Related
         </div>`;
     }
@@ -430,22 +430,22 @@ const Graph = (() => {
 
     if (usedTags.length) {
       if (hasCited || hasContextual) {
-        legend.innerHTML += `<div style="height:1px;background:rgba(255,255,255,0.06);margin:6px 0"></div>`;
+        legend.innerHTML += `<div style="height:1px;background:rgba(7,28,14,0.08);margin:6px 0"></div>`;
       }
       usedTags.forEach(tag => {
         const item = document.createElement('div');
-        item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:4px';
+        item.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:10px;color:#6A9478;margin-bottom:4px';
         item.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;background:${tag.color};flex-shrink:0;display:inline-block"></span>${escHtml(tag.name)}`;
         legend.appendChild(item);
       });
     }
 
     if (!usedTags.length && !hasCited && !hasContextual) {
-      legend.innerHTML = `<div style="font-size:10px;color:rgba(255,255,255,0.25)">Annotate papers to see connections</div>`;
+      legend.innerHTML = `<div style="font-size:10px;color:#6A9478">Annotate papers to see connections</div>`;
     }
 
     // Node size note
-    legend.innerHTML += `<div style="font-size:10px;color:rgba(255,255,255,0.18);margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);padding-top:5px">Node size = annotations</div>`;
+    legend.innerHTML += `<div style="font-size:10px;color:#6A9478;margin-top:6px;border-top:1px solid rgba(7,28,14,0.08);padding-top:5px">Node size = annotations</div>`;
   }
 
   // ── Zoom controls ─────────────────────────
