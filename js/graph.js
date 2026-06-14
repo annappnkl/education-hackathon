@@ -383,7 +383,7 @@ const Graph = (() => {
       _edgeTimer = setTimeout(() => {
         if (_nodeHovered) return;
         edgeTooltip.innerHTML = `
-          ${label ? `<div style="font-size:10px;font-weight:600;font-style:normal;color:#2A5C45;margin-bottom:4px">${escHtml(label)}</div>` : ''}
+          ${label ? `<div style="font-size:10px;font-weight:600;font-style:normal;color:#1A3D2A;margin-bottom:4px">${escHtml(label)}</div>` : ''}
           ${escHtml(reason)}
         `;
         edgeTooltip.style.display = 'block';
