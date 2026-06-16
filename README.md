@@ -1,3 +1,5 @@
+Hackathon submission for Claudfe Builders Club Munich - **winning 3rd Place**.
+
 # Research Studio
 
 A local, offline-first web app for academic research — find papers, read and annotate PDFs, explore connections between ideas, and draft your thesis or paper in one place.
