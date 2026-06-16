@@ -1,4 +1,4 @@
-Hackathon submission for Claudfe Builders Club Munich - **winning 3rd Place**.
+## Hackathon submission for Claude Builders Club Munich - **winning 3rd Place**.
 
 # Research Studio
 
