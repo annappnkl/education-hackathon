@@ -1,8 +1,8 @@
-## Hackathon submission for Claude Builders Club Munich - **winning 3rd Place**.
+## Hackathon submission for Claude Builders Club Munich - **won 3rd Place**.
 
 # papertrail
 
-A local, offline-first web app for academic research — find papers, read and annotate PDFs, explore connections between ideas, and draft your thesis or paper in one place.
+Only hackathon I ever did. A local, offline-first web app for academic research — find papers, read and annotate PDFs, explore connections between ideas, and draft your thesis or paper in one place.
 
 Built with vanilla HTML/CSS/JS. No frameworks. No accounts. Runs entirely in your browser via a lightweight local proxy server.
 
